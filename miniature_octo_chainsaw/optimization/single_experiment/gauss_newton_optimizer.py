@@ -2,8 +2,8 @@ import autograd.numpy as np
 import inspect
 import warnings
 from typing import Union
-from miniature_octo_chainsaw.source.optimization.single_experiment.gauss_newton import GeneralizedGaussNewton
-from miniature_octo_chainsaw.source.optimization.single_experiment.base_optimizer import BaseOptimizer
+from miniature_octo_chainsaw.optimization.single_experiment.gauss_newton import GeneralizedGaussNewton
+from miniature_octo_chainsaw.optimization.single_experiment.base_optimizer import BaseOptimizer
 
 
 class GaussNewtonOptimizer(BaseOptimizer):

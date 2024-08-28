@@ -4,7 +4,7 @@ import scipy
 import matplotlib.pyplot as plt
 import logging
 import copy
-from miniature_octo_chainsaw.source.optimization.check_regularity import check_PD, check_CQ
+from miniature_octo_chainsaw.optimization.check_regularity import check_PD, check_CQ
 
 
 CONVERGENCE_THRESHOLD = 1e-4

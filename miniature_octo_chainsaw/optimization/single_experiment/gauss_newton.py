@@ -5,10 +5,10 @@ import autograd.numpy as np
 from autograd import jacobian
 from scipy.optimize import minimize
 
-from miniature_octo_chainsaw.source.optimization.check_regularity import check_CQ
-from miniature_octo_chainsaw.source.optimization.single_experiment.line_search import line_search
-from miniature_octo_chainsaw.source.utils import where_negative, where_positive, where_zero
-from miniature_octo_chainsaw.source.optimization.single_experiment.base_optimizer import OptimizerResult
+from miniature_octo_chainsaw.optimization.check_regularity import check_CQ
+from miniature_octo_chainsaw.optimization.single_experiment.line_search import line_search
+from miniature_octo_chainsaw.utils import where_negative, where_positive, where_zero
+from miniature_octo_chainsaw.optimization.single_experiment.base_optimizer import OptimizerResult
 
 
 class GeneralizedGaussNewton:
