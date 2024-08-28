@@ -1,7 +1,7 @@
 import autograd.numpy as np
-from miniature_octo_chainsaw.source.models.peroxidase_oxidase.settings import ModelSettings
-from miniature_octo_chainsaw.source.models.utils import nparray_to_dict
-from miniature_octo_chainsaw.source.models.base_model import BaseModel
+from miniature_octo_chainsaw.models.peroxidase_oxidase.settings import ModelSettings
+from miniature_octo_chainsaw.models.utils import nparray_to_dict
+from miniature_octo_chainsaw.models.base_model import BaseModel
 
 
 class Model(BaseModel):

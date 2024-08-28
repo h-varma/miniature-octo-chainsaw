@@ -1,7 +1,7 @@
 import autograd.numpy as anp
-from parameter_estimation.source.models.indexing import get_compartment_indices
-from parameter_estimation.source.models.helper import get_parameter_dict
-from parameter_estimation.source.models.lorenz import settings
+from parameter_estimation.models.indexing import get_compartment_indices
+from parameter_estimation.models.helper import get_parameter_dict
+from parameter_estimation.models.lorenz import settings
 
 
 def model_rhs(y, problem, parameters=None):
