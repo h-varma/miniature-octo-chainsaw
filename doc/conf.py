@@ -4,6 +4,10 @@
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+import os
+import sys
+path = os.getcwd()
+sys.path.insert(0, os.path.abspath(os.path.join(path, os.pardir)))
 
 # -- Project information -----------------------------------------------------
 
@@ -18,11 +22,13 @@ author = 'Hridya Varma'
 # ones.
 extensions = [
     "nbsphinx",
-    "nbsphinx_link",
     "sphinx_mdinclude",
     "sphinx.ext.autodoc",
     "sphinx_rtd_theme",
+    "sphinx.ext.napoleon",
 ]
+
+napolean_numpy_docstring = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = []
@@ -30,7 +36,7 @@ templates_path = []
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
+exclude_patterns = ['build']
 
 # -- Options for HTML output -------------------------------------------------
 
