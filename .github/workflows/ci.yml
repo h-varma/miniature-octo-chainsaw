@@ -37,7 +37,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        if [ -f ./requirements.txt ]; then conda install --channel=conda-forge --file ./requirements.txt; fi    
+        conda install --channel=conda-forge --file ./requirements.txt   
 
     - name: Install Python package
       run: |
@@ -62,7 +62,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        if [ -f ./requirements.txt ]; then conda install --channel=conda-forge --file ./requirements.txt; fi  
+        conda install --channel=conda-forge --file ./requirements.txt  
 
     - name: Install Python package
       run: |
