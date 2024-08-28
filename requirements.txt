@@ -1,0 +1,9 @@
+autograd~=1.6.2
+numpy~=1.26.4
+scipy~=1.13.0
+matplotlib~=3.8.4
+easygui~=0.98.3
+pandas~=2.2.2
+cyipopt~=1.4.1
+pytest~=7.4.4
+osqp~=0.6.3
