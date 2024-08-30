@@ -81,8 +81,10 @@ class InitialGuessGenerator:
                 if len(matching_f) == 2:
                     for idx in where_h:
                         self.initial_guess.append(solutions[idx])
-                elif len(f_data[where_h]) == 1:
-                    idx = np.argmin(abs(f_params[where_h] - matching_f))
+                elif len(matching_f) == 1:
+                    f_values = np.array(f_params)[where_h]
+                    f_closest = min(f_values, key=lambda x: abs(x - matching_f))
+                    idx = f_params.index(f_closest)
                     self.initial_guess.append(solutions[idx])
 
             elif count_h == 1:
