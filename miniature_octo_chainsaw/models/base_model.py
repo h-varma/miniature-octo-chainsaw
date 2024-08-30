@@ -64,14 +64,11 @@ class BaseModel(ABC):
             self.parameters[key] = {'value': value, 'vary': False}
 
     def generate_parameter_guesses(self):
-        """
-        Generates random initial guesses for the parameters and controls to be estimated.
-        """
+        """Generates random initial guesses for the variable parameters and controls."""
+        parameter_names = self.global_parameters + list(self.controls.values())
 
-        parameter_list = self.global_parameters + list(self.controls.values())
-
-        for parameter, parameter_value in self.true_parameters.items():
-            if parameter in parameter_list:
+        for parameter_name, parameter_value in self.true_parameters.items():
+            if parameter_name in parameter_names:
                 loc = parameter_value
                 scale = parameter_value * self.parameter_noise
                 a = (0 - loc) / scale
@@ -79,9 +76,10 @@ class BaseModel(ABC):
                 # compute truncated normal random variable
                 # truncated at a and b standard deviations from loc
                 parameter_value = truncnorm.rvs(a=a, b=b, loc=loc, scale=scale)
-            self.parameters[parameter] = {"value": parameter_value, "vary": False}
+                parameter_value = float(parameter_value)
+            self.parameters[parameter_name] = {"value": parameter_value, "vary": False}
 
-    def __getattr__(self, attr : str):
+    def __getattr__(self, attr: str):
         """
         Set the attributes from the settings object as attributes of self.
 
