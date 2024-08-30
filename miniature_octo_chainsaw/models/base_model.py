@@ -21,7 +21,7 @@ class BaseModel(ABC):
         -------
         np.ndarray : RHS of the model
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def jacobian_(self, x: np.ndarray) -> np.ndarray:
@@ -37,7 +37,7 @@ class BaseModel(ABC):
         -------
         np.ndarray : Jacobian matrix of the model
         """
-        pass
+        raise NotImplementedError
 
     def _initialize_parameters(self, parameters: dict):
         """
