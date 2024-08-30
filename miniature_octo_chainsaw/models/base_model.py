@@ -7,6 +7,17 @@ class BaseModel(ABC):
     """
     Base class for all models - not functional on its own.
     """
+
+    def __init__(self):
+        self.data = None
+        self.parameters = None
+        self.mask = {
+            "compartments": False,
+            "controls": False,
+            "auxiliary_variables": False,
+            "global_parameters": False,
+        }
+
     @abstractmethod
     def rhs_(self, x: np.ndarray) -> np.ndarray:
         """

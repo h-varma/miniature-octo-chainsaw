@@ -25,6 +25,7 @@ class Model(BaseModel):
     """
 
     def __init__(self):
+        super().__init__()
         self.settings = ModelSettings()
         self._initialize_parameters(parameters=self.true_parameters)
 
