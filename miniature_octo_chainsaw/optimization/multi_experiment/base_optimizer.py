@@ -19,6 +19,9 @@ class BaseMultiExperimentOptimizer(BaseOptimizer, ABC):
         """
         super().__init__()
 
+        self.f = None
+        self.J = None
+
         self.f1 = np.array([])
         self.f2 = np.array([])
         self.lagrange_multipliers = None
@@ -35,8 +38,8 @@ class BaseMultiExperimentOptimizer(BaseOptimizer, ABC):
         x = np.copy(self.x0)
 
         for i in range(self.max_iters):
-            self._function_evaluation(x=x)
-            self._jacobian_evaluation(x=x)
+            self.f = self._function_evaluation(x=x)
+            self.J = self._jacobian_evaluation(x=x)
 
             if not check_PD(j=self.J):
                 logger.warn(f"Positive definiteness does not hold in iterate {i}!")
@@ -169,7 +172,7 @@ class BaseMultiExperimentOptimizer(BaseOptimizer, ABC):
 
         return np.column_stack((local_x, global_x.T))
 
-    def _function_evaluation(self, x: np.ndarray):
+    def _function_evaluation(self, x: np.ndarray) -> np.ndarray:
         """
         Evaluate the objective and constraints.
 
@@ -177,8 +180,12 @@ class BaseMultiExperimentOptimizer(BaseOptimizer, ABC):
         ----------
         x : np.ndarray
             solution vector
+
+        Returns
+        -------
+        np.ndarray : function values
         """
-        self.f = np.array([])
+        f = np.array([])
 
         self.f1 = self.f1_fun(x)
         self.f2 = np.array([])
@@ -187,10 +194,12 @@ class BaseMultiExperimentOptimizer(BaseOptimizer, ABC):
         for i in range(self.n_experiments):
             f1 = self.f1[i * self.n_observables: (i + 1) * self.n_observables]
             f2 = self.f2_fun(x[i])
-            self.f = np.concatenate((self.f, f2, f1))
+            f = np.concatenate((f, f2, f1))
             self.f2 = np.concatenate((self.f2, f2))
 
-    def _jacobian_evaluation(self, x: np.ndarray):
+        return f
+
+    def _jacobian_evaluation(self, x: np.ndarray) -> np.ndarray:
         """
         Evaluate the Jacobian of the objective and constraints.
 
@@ -198,9 +207,13 @@ class BaseMultiExperimentOptimizer(BaseOptimizer, ABC):
         ----------
         x : np.ndarray
             solution vector
+
+        Returns
+        -------
+        np.ndarray : Jacobian matrix
         """
         n_cols = self.n_total_parameters
-        self.J = np.array([]).reshape(0, n_cols)
+        J = np.array([]).reshape(0, n_cols)
 
         self.j1 = self.j1_fun(x)
         self.j2 = np.array([]).reshape(0, n_cols)
@@ -218,9 +231,11 @@ class BaseMultiExperimentOptimizer(BaseOptimizer, ABC):
             j2[:, global_idx] = j2_[:, self.n_local:]
             assert check_CQ(j2), f"Experiment {i}: No constraint qualification!"
 
-            self.J = np.row_stack((self.J, j2, j1))
+            J = np.row_stack((J, j2, j1))
             self.j2 = np.row_stack((self.j2, j2))
         assert check_CQ(self.j2), "Constraint qualification does not hold!"
+
+        return J
 
     def _level_function(self, x: np.ndarray) -> float:
         """
