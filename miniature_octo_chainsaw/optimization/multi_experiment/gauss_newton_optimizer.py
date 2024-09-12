@@ -251,6 +251,33 @@ class MultiExperimentGaussNewton(BaseMultiExperimentOptimizer):
 
         return T_inv
 
+    def _compute_omega(self, t: float, x: np.ndarray, dx: np.ndarray):
+        f = self._function_evaluation(x + t * dx)
+        f_ = self.T_beta_inv @ self.P_inv @ self.T_alpha_inv @ f
+
+        f_global = f_[-len(self.empty_rows):][:self.Rg.shape[1]]
+        dx_global = scipy.linalg.solve(self.Rg @ self.Pg, -f_global)
+
+        dx_local = np.zeros((self.n_experiments, self.n_local))
+        k = 0
+        for i in range(self.n_experiments):
+            local_rows = np.where(self.R[i].any(axis=1))[0]
+            idx = slice(k, k + len(local_rows))
+
+            rhs = -(self.G[i] @ dx_global + f_[idx])
+            dx_local[i, :] = scipy.linalg.solve((self.R[i] @ self.P[i])[local_rows], rhs)
+            k += len(local_rows)
+
+        dxbar = np.concatenate((dx_local.flatten(), dx_global))
+
+        numerator = 2 * np.linalg.norm(dxbar - (1 - t) * dx)
+        denominator = (t ** 2) * (np.linalg.norm(dx) ** 2)
+        return numerator / denominator
+
+    def _rmt_condition(self, t: float, eta: float, x: np.ndarray, dx: np.ndarray):
+        omega = self._compute_omega(t=t, x=x, dx=dx)
+        return t * omega * np.linalg.norm(dx) - eta, omega
+
     def compute_covariance_matrix(self) -> np.ndarray:
         """
         Compute the covariance matrix at the solution.
