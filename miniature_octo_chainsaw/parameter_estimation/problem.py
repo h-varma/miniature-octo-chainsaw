@@ -5,22 +5,23 @@ from miniature_octo_chainsaw.utils import timing_decorator
 from miniature_octo_chainsaw.models.utils import nparray_to_dict
 from miniature_octo_chainsaw.parameter_estimation.subproblems import Problem
 from miniature_octo_chainsaw.optimization.multi_experiment.osqp_optimizer import MultiExperimentOSQP
+from miniature_octo_chainsaw.optimization.multi_experiment.gauss_newton_optimizer import MultiExperimentGaussNewton
 from miniature_octo_chainsaw.logging_ import logger
 
 
 class ParameterEstimation:
     def __init__(
-        self,
-        x0: np.ndarray,
-        mask: np.ndarray,
-        model: object,
-        n_experiments: int,
-        method: str = "osqp",
-        xtol: float = 1e-4,
-        max_iters: int = 100,
-        plot_iters: bool = False,
-        compute_ci: bool = False,
-        timer: bool = False,
+            self,
+            x0: np.ndarray,
+            mask: np.ndarray,
+            model: object,
+            n_experiments: int,
+            method: str = "osqp",
+            xtol: float = 1e-4,
+            max_iters: int = 100,
+            plot_iters: bool = False,
+            compute_ci: bool = False,
+            timer: bool = False,
     ):
         """
         Solve the multi-experiment parameter estimation problem.
@@ -52,7 +53,6 @@ class ParameterEstimation:
         self.mask = mask
         self.model = model
         self.n_experiments = n_experiments
-        self.method = method
         self.xtol = xtol
         self.max_iters = max_iters
         self.plot_iters = plot_iters
@@ -76,9 +76,16 @@ class ParameterEstimation:
         )
         self.equality_constraints = self.problem.stack_functions
 
+        if method == "osqp":
+            self.Solver = MultiExperimentOSQP
+        elif method == "gauss-newton":
+            self.Solver = MultiExperimentGaussNewton
+        else:
+            raise Exception("Invalid parameter estimation solver method!")
+
         if timer:
             self.__run_solver = timing_decorator(self.__run_solver)
-        logger.info(f"Estimate the model parameters using {self.method} solver.")
+        logger.info(f"Estimate the model parameters using {method} solver.")
         self.result = self.__run_solver()
 
         if self.result.success:
@@ -91,24 +98,21 @@ class ParameterEstimation:
             self.__plot_results()
 
     def __run_solver(self):
-        if self.method == "osqp":
-            self.solver = MultiExperimentOSQP(
-                x0=self.x0,
-                f1_fun=self.objective_function,
-                f2_fun=self.equality_constraints,
-                n_local=self.n_local,
-                n_global=self.n_global,
-                n_observables=self.n_observables,
-                n_experiments=self.n_experiments,
-                xtol=self.xtol,
-                max_iters=self.max_iters,
-                plot_iters=self.plot_iters,
-                compute_ci=self.compute_ci,
-            )
-            self.solver.minimize()
-            return self.solver.result
-        else:
-            raise Exception("Invalid parameter estimation solver method!")
+        self.solver = self.Solver(
+            x0=self.x0,
+            f1_fun=self.objective_function,
+            f2_fun=self.equality_constraints,
+            n_local=self.n_local,
+            n_global=self.n_global,
+            n_observables=self.n_observables,
+            n_experiments=self.n_experiments,
+            xtol=self.xtol,
+            max_iters=self.max_iters,
+            plot_iters=self.plot_iters,
+            compute_ci=self.compute_ci,
+        )
+        self.solver.minimize()
+        return self.solver.result
 
     def __get_global_parameters(self, x: np.ndarray) -> dict:
         """
@@ -182,9 +186,9 @@ class ParameterEstimation:
         np.ndarray : residuals
         """
         obj_fun = np.array([])
-        global_x = x[-self.n_global :]
+        global_x = x[-self.n_global:]
         for i, data in enumerate(list(compress(self.model.data, self.mask))):
-            local_x = x[i * self.n_local : (i + 1) * self.n_local]
+            local_x = x[i * self.n_local: (i + 1) * self.n_local]
             solution = np.concatenate((local_x, global_x))
             _, p, _ = nparray_to_dict(solution, model=self.model)
 

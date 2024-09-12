@@ -33,10 +33,10 @@ def main(MODEL_NAME):
         mask=igGenerator.mask,
         model=model,
         n_experiments=int(sum(igGenerator.mask)),
-        method="osqp",
+        method="gauss-newton",
         plot_iters=True,
-        compute_ci=True,
-        timer=True,
+        compute_ci=False,
+        timer=False,
     )
 
     save_results_as_pickle(res=PE)

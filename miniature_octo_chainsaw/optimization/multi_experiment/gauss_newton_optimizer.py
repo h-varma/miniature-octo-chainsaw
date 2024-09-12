@@ -1,230 +1,336 @@
-import numpy as np
+import autograd.numpy as np
 from autograd import jacobian
 import scipy
-import matplotlib.pyplot as plt
-import logging
-import copy
-from miniature_octo_chainsaw.optimization.check_regularity import check_PD, check_CQ
+from typing import Tuple
+from miniature_octo_chainsaw.optimization.multi_experiment.base_optimizer import BaseMultiExperimentOptimizer
+from miniature_octo_chainsaw.logging_ import logger
 
 
-CONVERGENCE_THRESHOLD = 1e-4
-MAX_ITERS = 100
-ETA = 1
-ETA_MAX = 1.2
+class MultiExperimentGaussNewton(BaseMultiExperimentOptimizer):
+    def __init__(
+            self,
+            x0: np.ndarray,
+            f1_fun: callable,
+            f2_fun: callable,
+            n_local: int,
+            n_global: int,
+            n_observables: int,
+            n_experiments,
+            xtol: float = 1e-4,
+            max_iters: int = 100,
+            plot_iters: bool = False,
+            compute_ci=False
+    ):
+        """
+        Solve multi-experiment non-linear optimization problem using Gauss-Newton method.
 
+        Schlöder, Johannes P. "Numerische Methoden zur Behandlung hochdimensionaler
+        Aufgaben der Parameteridentifizierung." (Disseration) (1987).
 
-class MultiExperimentGaussNewton:
-    def __init__(self, x0, f1_fun, f2_fun, n_experiments, settings, compute_ci=False):
-        self.f1_fun = f1_fun  # objective function
-        self.f2_fun = f2_fun  # equality constraint
+        Parameters
+        ----------
+        x0 : np.ndarray
+            initial guess
+        f1_fun : callable
+            objective function
+        f2_fun : callable
+            equality constraint
+        n_local : int
+            number of local parameters
+        n_global : int
+            number of global parameters
+        n_observables : int
+            number of observables
+        n_experiments : int
+            number of experiments
+        xtol : float
+            convergence threshold
+        max_iters : int
+            maximum number of iterations
+        plot_iters : bool
+            whether to plot the level function at each iteration
+        compute_ci : bool
+            whether to compute confidence intervals
+        """
+        super().__init__()
+        self.x0 = x0
+        self.f1_fun = f1_fun
+        self.f2_fun = f2_fun
+        self.n_local = n_local
+        self.n_global = n_global
+        self.n_observables = n_observables
+        self.n_experiments = n_experiments
+        self.xtol = xtol
+        self.max_iters = max_iters
+        self.plot_iters = plot_iters
+        self.compute_ci = compute_ci
+
+        assert self.n_global > 0, (
+            "No global parameters found. "
+            "Multi-experiment PE does not make sense in this case!"
+        )
+
         self.j1_fun = jacobian(self.f1_fun)
         self.j2_fun = jacobian(self.f2_fun)
 
-        self.n_experiments = n_experiments
-        self.n_global = len(settings.global_parameters)
-        self.n_local = int((len(x0) - self.n_global) / n_experiments)
-        assert self.n_global > 0, "No global parameters found. Multi-experiment PE does not make sense in this case!"
-        self.n_constraints = len(self.f2_fun(np.hstack((x0[:self.n_local], x0[-self.n_global:]))))
-        self.n_controls = len([settings.param_h, settings.param_f])
         self.n_total_parameters = self.n_experiments * self.n_local + self.n_global
 
-        self.level_function_history = []
-        self.success = True
+        y0 = self.split_into_experiments(x0)
+        self.n_local_constr = len(self.f2_fun(y0[0]))
 
-        self.L = []
-        self.Q = []
-        self.R = []
-        self.T = []
-        self.Gtilde = []
-        self.G_idx = np.array([])
-        self.Rg = np.array([])
-        self.Pg = np.array([])
-        self.S0 = np.array([])
-        self.E0 = np.array([]).reshape(0, self.n_total_parameters)
-        self.fS0 = np.array([])
-        self.fE0 = np.array([])
-        self.T_alpha_inv = np.array([])
-        self.P_inv = np.array([])
-        self.T_beta_inv = np.array([])
-        self.ci = np.zeros_like(x0)
+        self.n_local_rows = self.n_local_constr + self.n_observables
 
-        self.x = copy.deepcopy(x0)  # initial guess
-        self.alpha = 1
+        self.R = None
+        self.P = None
+        self.G = None
+        self.non_empty_rows = None
 
-        for i in range(MAX_ITERS):
-            # construct multi-experiment function evaluation
-            self.f = np.array([])
-            self.construct_f(x=self.x)
-            # construct multi-experiment jacobian
-            self.J = np.array([]).reshape(0, self.n_total_parameters)
-            self.construct_jacobian(x=self.x)
-            if not check_PD(j=self.J):
-                logging.warning(f"Positive definiteness does not hold in iterate {i}!")
-            dxbar = self.solve_linearized_system_for_step_size()
-            self.restrictive_monotonicity_test(x=self.x, dx=dxbar)
-            dx = dxbar * self.alpha
-            self.alpha = np.minimum(1, ETA / (self.compute_w(x=self.x, dx=dxbar) * np.linalg.norm(dxbar)))
-            step = copy.deepcopy(dx)
-            if np.linalg.norm(step) < CONVERGENCE_THRESHOLD:
-                if compute_ci:
-                    self.compute_confidence_intervals_with_breakdown()
-                break
-            self.x = self.x + dx
-            self.level_function_history.append(self.level_function(x=self.x))
+        self.j1 = np.array([]).reshape(0, self.n_total_parameters)
+        self.j2 = np.array([]).reshape(0, self.n_total_parameters)
 
-            if i == MAX_ITERS - 1:
-                self.success = False
+        self.T_alpha_inv = None
+        self.T_beta_inv = None
+        self.P_inv = None
 
-        plt.plot(np.arange(0, len(self.level_function_history)), self.level_function_history, '*')
-        plt.xlabel('iterations')
-        plt.ylabel('level function')
-        plt.show()
+    def solve_linearized_system(self):
+        """
+        Solve the linearized system using Gauss-Newton method.
 
-    def construct_jacobian(self, x):
-        self.S0 = self.j1_fun(x)
-        y = self.split_into_experiments(x)
-        self.E0 = np.array([]).reshape(0, self.n_total_parameters)
-        for i in range(self.n_experiments):
-            E = np.zeros((self.j2_fun(y[i]).shape[0], self.n_total_parameters))
-            E[:, i * self.n_local:(i + 1) * self.n_local] = self.j2_fun(y[i])[:, :self.n_local]
-            E[:, self.n_experiments * self.n_local:] = self.j2_fun(y[i])[:, self.n_local:]
-            assert check_CQ(E), f"Constraint qualification does not hold in experiment {i}!"
-            self.J = np.row_stack((self.J, E, self.S0[i*self.n_controls:(i+1)*self.n_controls]))
-            self.E0 = np.row_stack((self.E0, E))
-        assert check_CQ(self.E0), "Constraint qualification does not hold in the multi-experiment matrix!"
+        Returns
+        -------
+        np.ndarray : solution vector
+        """
+        self.T_alpha_inv, P_right = self._local_to_upper_triangular_operator(J=self.J)
+        J = self.T_alpha_inv @ self.J @ P_right
 
-    def construct_f(self, x):
-        self.fS0 = self.f1_fun(x)
-        y = self.split_into_experiments(x)
-        self.fE0 = np.array([])
-        for i in range(self.n_experiments):
-            fE = self.f2_fun(y[i])
-            self.f = np.concatenate((self.f, fE, self.fS0[i*self.n_controls:(i+1)*self.n_controls]))
-            self.fE0 = np.concatenate((self.fE0, fE))
+        self.P_inv = self._permute_rows(J=J)
+        J = self.P_inv @ J
 
-    def split_into_experiments(self, x):
-        y = x[:-self.n_global].reshape(self.n_experiments, self.n_local)
-        return np.column_stack((y, np.tile(x[-self.n_global:].reshape(-1, 1), self.n_experiments).T))
+        self.T_beta_inv = self._transform_global_blocks(J=J)
+        J = self.T_beta_inv @ J
 
-    def compute_T_alpha(self, J):
-        self.L = [np.array([])] * self.n_experiments
-        self.P = [np.array([])] * self.n_experiments
-        self.Q = [np.array([])] * self.n_experiments
-        self.R = [np.array([])] * self.n_experiments
-        self.T = [np.array([])] * self.n_experiments
-        for i in range(self.n_experiments):
-            row_idx = slice(i * (self.n_constraints + self.n_controls), (i+1) * (self.n_constraints + self.n_controls))
-            J_local = J[row_idx, i * self.n_local:(i+1) * self.n_local]
-            E, S = J_local[:self.n_constraints, :], J_local[self.n_constraints:, :]
-            _, _, P = scipy.linalg.qr(E, mode='full', pivoting=True)
-            self.P[i] = np.eye(P.shape[0])[P]
-            E_tilde, S_tilde = E @ self.P[i].T, S @ self.P[i].T
-            T, R11 = np.linalg.qr(E_tilde[:, :self.n_constraints], mode='complete')
-            R12 = T.T @ E_tilde[:, -1:]
-            self.L[i] = S_tilde[:, :self.n_constraints] @ np.linalg.inv(R11)
-            self.Q[i], R31 = np.linalg.qr(S_tilde[:, self.n_constraints:] - self.L[i] @ R12, mode='complete')
-            self.R[i] = np.block([[R11, R12], [np.zeros((self.n_controls, self.n_constraints)), R31]])
-            self.T[i] = np.block([[T, np.zeros((self.n_constraints, self.n_controls))], [self.L[i], self.Q[i]]])
-            assert np.allclose(self.T[i] @ self.R[i], J_local @ self.P[i].T), "Jacobian decomposition is inconsistent!"
-        return scipy.linalg.block_diag(*self.T)
-
-    def solve_linearized_system_for_step_size(self):
-        # step 1
-        T_alpha = self.compute_T_alpha(self.J)
-        self.T_alpha_inv = np.linalg.inv(T_alpha)
-        Pt = scipy.linalg.block_diag(scipy.linalg.block_diag(*self.P).T, np.eye(self.n_global))
-        J1 = self.T_alpha_inv @ self.J @ Pt
-        n_rows = self.n_constraints + self.n_controls
-        self.G_idx = np.concatenate([np.where(~self.R[i].any(axis=1))[0] + i*n_rows for i in range(self.n_experiments)])
-        Ji_idx = np.setdiff1d(np.arange(J1.shape[0]), self.G_idx)
-        self.P_inv = np.eye(J1.shape[0])[np.concatenate((Ji_idx, self.G_idx))]
-        J2 = self.P_inv @ J1
-        # step 3
-        assert len(self.G_idx)
-        _, _, Pgidx = scipy.linalg.qr(J2[-len(self.G_idx):, -self.n_global:], mode='full', pivoting=True)
-        self.Pg = np.eye(Pgidx.shape[0])[Pgidx]
-        T_beta_g, Rg = np.linalg.qr(J2[-len(self.G_idx):, -self.n_global:] @ self.Pg.T, mode='complete')
-        T_beta = scipy.linalg.block_diag(np.eye(len(Ji_idx)), T_beta_g)
-        self.T_beta_inv = np.linalg.inv(T_beta)
-        J = self.T_beta_inv @ J2
         f = self.T_beta_inv @ self.P_inv @ self.T_alpha_inv @ self.f
-        assert np.allclose(T_alpha @ self.P_inv.T @ T_beta @ J, self.J @ Pt), "Jacobian decomposition is inconsistent!"
-        # compute step size for the global variables
-        self.Rg = Rg[:Rg.shape[1], :]
-        fG = f[-len(self.G_idx):][:self.Rg.shape[1]]
-        dxG = -np.linalg.inv(self.Rg @ self.Pg) @ fG
-        # compute the step size for the local variables
-        dx = np.zeros((self.n_experiments, self.n_local))
-        init = 0
-        self.Gtilde = [np.array([])] * self.n_experiments
+
+        Pg = self.P[-1]
+        Rg = self.R[-1]
+        f_global = f[-len(self.empty_rows):][:Rg.shape[1]]
+        dx_global = scipy.linalg.solve(Rg @ Pg, -f_global)
+
+        dx_local = np.zeros((self.n_experiments, self.n_local))
+        k = 0
+        self.G = [np.array([])] * self.n_experiments
         for i in range(self.n_experiments):
-            i_idx = np.where(~np.isclose(np.sum(self.R[i], axis=1), 0))[0]
-            f_idx = slice(init, init+len(i_idx))
-            self.Gtilde[i] = J[f_idx, -self.n_global:]
-            dx[i] = -np.linalg.inv((self.R[i] @ self.P[i])[i_idx]) @ (self.Gtilde[i] @ dxG + f[f_idx])
-            init += len(i_idx)
-        dxbar = np.concatenate((dx.flatten(), dxG))
-        assert np.isclose(max(np.abs(self.E0 @ dxbar + self.fE0)), 0)
+            local_rows = np.where(self.R[i].any(axis=1))[0]
+            idx = slice(k, k + len(local_rows))
+            self.G[i] = J[idx, -self.n_global:]
+
+            rhs = -(self.G[i] @ dx_global + f[idx])
+
+            dx_local[i, :] = scipy.linalg.solve((self.R[i] @ self.P[i])[local_rows], rhs)
+            k += len(local_rows)
+
+        dxbar = np.concatenate((dx_local.flatten(), dx_global))
+
+        assert np.allclose(self.j2 @ dxbar + self.f2, 0)
+
         return dxbar
 
-    def level_function(self, x):
-        f1 = 0.5 * np.linalg.norm(self.f1_fun(x)) ** 2
-        y = self.split_into_experiments(x)
-        f2 = np.concatenate([self.f2_fun(y[i]) for i in range(self.n_experiments)])
-        f2 = np.sum(np.abs(f2))
-        return f1+f2
+    def _local_to_upper_triangular_operator(self, J: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Transform the local blocks of the Jacobian matrix into upper triangular form.
 
-    def compute_w(self, x, dx):
-        f = np.array([])
-        fS0 = self.f1_fun(x + self.alpha * dx)
-        y = self.split_into_experiments(x + self.alpha * dx)
-        fE0 = np.array([])
-        for i in range(self.n_experiments):
-            fE = self.f2_fun(y[i])
-            f = np.concatenate((f, fE, fS0[i * self.n_controls:(i + 1) * self.n_controls]))
-            fE0 = np.concatenate((fE0, fE))
-        f_tilde = self.T_beta_inv @ self.P_inv @ self.T_alpha_inv @ f
-        fG = f_tilde[-len(self.G_idx):][:self.Rg.shape[1]]
-        dxG = -np.linalg.inv(self.Rg @ self.Pg) @ fG
-        dxbar = np.zeros((self.n_experiments, self.n_local))
-        init = 0
-        for i in range(self.n_experiments):
-            i_idx = np.where(~np.isclose(np.sum(self.R[i], axis=1), 0))[0]
-            f_idx = slice(init, init + len(i_idx))
-            dxbar[i] = -np.linalg.inv((self.R[i] @ self.P[i])[i_idx]) @ (self.Gtilde[i] @ dxG + f_tilde[f_idx])
-            init += len(i_idx)
-        dxbar = np.concatenate((dxbar.flatten(), dxG))
-        return 2 * np.linalg.norm(dxbar - (1 - self.alpha) * dx) / ((self.alpha * np.linalg.norm(dx)) ** 2)
+        Parameters
+        ----------
+        J : np.ndarray
+            Jacobian matrix
 
-    def restrictive_monotonicity_test(self, x, dx):
-        w = self.compute_w(x=x, dx=dx)
-        while self.alpha * w * np.linalg.norm(dx) > ETA_MAX:
-            self.alpha = ETA / (w * np.linalg.norm(dx))
-            w = self.compute_w(x=x, dx=dx)
+        Returns
+        -------
+        np.ndarray : orthogonal matrix
+        np.ndarray : permutation matrix
+        """
 
-    def compute_confidence_intervals_with_breakdown(self):
-        Ug = np.dot(np.linalg.inv(self.Rg), np.linalg.inv(self.Rg).T)
-        beta = np.linalg.norm(self.f1_fun(self.x)) / np.sqrt(self.J.shape[0] - self.J.shape[1])
-        self.ci[-self.n_global:] = beta * np.sqrt(np.diag(self.Pg.T @ Ug @ self.Pg))
-        for i in range(self.n_experiments):
-            R = self.R[i][:self.n_local, :self.n_local]
-            R1 = self.R[i][:self.n_constraints, :self.n_constraints]
-            R2 = self.R[i][:self.n_constraints, self.n_constraints:]
-            R3 = self.R[i][self.n_constraints:self.n_local, self.n_constraints:]
-            D = np.dot(np.linalg.inv(R1), np.linalg.inv(R1).T)
-            E = -np.dot(np.linalg.inv(R1), R2)
-            F = np.dot(np.linalg.inv(R3), np.linalg.inv(R3).T)
-            A = np.dot(np.linalg.inv(R), self.Gtilde[i])
-            U = np.block([[D + E @ F @ E.T, E @ F], [F @ E.T, F]])
-            Ci = np.diag(self.P[i].T @ (U + A @ Ug @ A.T) @ self.P[i])
-            self.ci[i * self.n_local:(i + 1) * self.n_local] = beta * np.sqrt(Ci)
+        transformer = (self._transform_local_block(i=i, J=J) for i in range(self.n_experiments))
+        T_, self.R, self.P = map(list, zip(*transformer))
 
-    def compute_confidence_intervals_without_breakdown(self):
-        Ug = np.dot(np.linalg.inv(self.Rg), np.linalg.inv(self.Rg).T)
-        beta = np.linalg.norm(self.f1_fun(self.x)) / np.sqrt(self.J.shape[0] - self.J.shape[1])
-        self.ci[-self.n_global:] = beta * np.sqrt(np.diag(self.Pg.T @ Ug @ self.Pg))
+        T_ = scipy.linalg.block_diag(*T_)
+        T_inv = np.linalg.inv(T_)
+
+        Pg = np.eye(self.n_global)
+        Pl = scipy.linalg.block_diag(*self.P).T
+        P = scipy.linalg.block_diag(Pl, Pg)
+        return T_inv, P
+
+    def _transform_local_block(self, i: int, J: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Transform a local block of the Jacobian matrix into upper triangular form.
+
+        Parameters
+        ----------
+        i : int
+            experiment index
+        J : np.ndarray
+            Jacobian matrix
+
+        Returns
+        -------
+        np.ndarray : orthogonal matrix T
+        np.ndarray : upper triangular matrix R
+        np.ndarray : permutation matrix P
+        """
+        row_idx = slice(i * self.n_local_rows, (i + 1) * self.n_local_rows)
+        J_local = J[row_idx, i * self.n_local:(i + 1) * self.n_local]
+        f2, f1 = J_local[:self.n_local_constr, :], J_local[self.n_local_constr:, :]
+
+        _, _, P = self._qr_decomposition(f2, pivoting=True)
+        f2_tilde, f1_tilde = f2 @ P.T, f1 @ P.T
+
+        T_, R11, _ = self._qr_decomposition(f2_tilde[:, :self.n_local_constr], pivoting=False)
+        R12 = T_.T @ f2_tilde[:, -1:]
+        L = f1_tilde[:, :self.n_local_constr] @ self._upper_triangular_inverse(R11)
+        Q, R31, _ = self._qr_decomposition(f1_tilde[:, self.n_local_constr:] - L @ R12, pivoting=False)
+        O = np.zeros((self.n_observables, self.n_local_constr))
+        R = np.block([[R11, R12], [O, R31]])
+        T_ = np.block([[T_, O.T], [L, Q]])
+
+        assert np.allclose(T_ @ R, J_local @ P.T), f"Decomposition in {i}th block is inconsistent!"
+        return T_, R, P
+
+    def _permute_rows(self, J: np.ndarray) -> np.ndarray:
+        """
+        Permute the rows of the Jacobian matrix.
+
+        Parameters
+        ----------
+        J : np.ndarray
+            Jacobian matrix
+
+        Returns
+        -------
+        np.ndarray : permutation matrix
+        """
+        n_rows = J.shape[0]
+
+        where_empty = []
         for i in range(self.n_experiments):
-            R = self.R[i][:self.n_local, :self.n_local]
-            res = self.Gtilde[i] @ Ug @ self.Gtilde[i].T + np.eye(R.shape[0])
-            Ci = np.diag(self.P[i].T @ np.linalg.inv(R) @ res @ np.linalg.inv(R).T @ self.P[i])
-            self.ci[i * self.n_local:(i + 1) * self.n_local] = beta * np.sqrt(Ci)
+            local_rows = np.where(~self.R[i].any(axis=1))[0]
+            where_empty.append(local_rows + i * self.n_local_rows)
+
+        self.empty_rows = np.concatenate(where_empty)
+        self.non_empty_rows = np.setdiff1d(np.arange(n_rows), self.empty_rows)
+
+        P = np.eye(n_rows)[np.concatenate((self.non_empty_rows, self.empty_rows))]
+        return P
+
+    def _transform_global_blocks(self, J: np.ndarray) -> np.ndarray:
+        """
+        Transform the global blocks of the Jacobian matrix into upper triangular form.
+
+        Parameters
+        ----------
+        J : np.ndarray
+            Jacobian matrix
+
+        Returns
+        -------
+        np.ndarray : orthogonal matrix
+        """
+        n_empty = len(self.empty_rows)
+        n_non_empty = len(self.non_empty_rows)
+        assert n_empty > 0
+
+        J_tilde = J[-n_empty:, -self.n_global:]
+        _, _, Pg = self._qr_decomposition(J_tilde, pivoting=True)
+        self.P.append(Pg)
+
+        Tg, Rg, _ = self._qr_decomposition(J_tilde @ Pg.T, pivoting=False)
+        self.R.append(Rg[:Rg.shape[1], :])
+
+        T_ = scipy.linalg.block_diag(np.eye(n_non_empty), Tg)
+        T_inv = np.linalg.inv(T_)
+
+        return T_inv
+
+    def compute_covariance_matrix(self) -> np.ndarray:
+        """
+        Compute the covariance matrix at the solution.
+
+        Returns
+        -------
+        np.ndarray : covariance matrix
+        """
+        assert len(self.P) == self.n_experiments + 1
+        assert len(self.R) == self.n_experiments + 1
+
+        C = np.zeros((self.n_total_parameters, self.n_total_parameters))
+
+        Pg = self.P[-1]
+        Rg = self.R[-1]
+        Rg_inv = self._upper_triangular_inverse(Rg)
+        Ug = Rg_inv @ Rg_inv.T
+        C[-self.n_global:, -self.n_global:] = Pg.T @ Ug @ Pg
+
+        for i in range(self.n_experiments):
+            i_idx = slice(i * self.n_local, (i + 1) * self.n_local)
+            Ri = self.R[i][:self.n_local, :self.n_local]
+            Ri_inv = self._upper_triangular_inverse(Ri)
+            for j in range(i, self.n_experiments):
+                if i == j:
+                    I = np.eye(self.n_local)
+                    X = self.G[i] @ Ug @ self.G[i].T + I
+                    C[i_idx, i_idx] = self.P[i].T @ Ri_inv @ X @ Ri_inv.T @ self.P[i]
+                else:
+                    j_idx = slice(j * self.n_local, (j + 1) * self.n_local)
+                    Rj = self.R[j][:self.n_local, :self.n_local]
+                    Rj_inv = self._upper_triangular_inverse(Rj)
+                    X = self.G[i] @ Ug @ self.G[j].T
+                    C[i_idx, j_idx] = self.P[i].T @ Ri_inv @ X @ Rj_inv.T @ self.P[j]
+
+            C[i_idx, -self.n_global:] = self.P[i].T @ Ri_inv @ self.G[i] @ Ug @ Pg
+
+        return C
+
+    @staticmethod
+    def _upper_triangular_inverse(x: np.ndarray) -> np.ndarray:
+        """
+        Compute the inverse of an upper triangular matrix.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            upper triangular matrix
+
+        Returns
+        -------
+        np.ndarray : inverse of the upper triangular matrix
+        """
+        return scipy.linalg.lapack.dtrtri(x, lower=0)[0]
+
+    @staticmethod
+    def _qr_decomposition(X: np.ndarray, pivoting: bool) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Compute the QR decomposition of a matrix.
+
+        Parameters
+        ----------
+        X : np.ndarray
+            matrix
+        pivoting : bool
+            whether to use pivoting
+
+        Returns
+        -------
+        np.ndarray : orthogonal matrix Q
+        np.ndarray : upper triangular matrix R
+        np.ndarray : permutation matrix P
+        """
+        n = X.shape[1]
+
+        if pivoting:
+            Q, R, P = scipy.linalg.qr(X, mode="full", pivoting=True)
+            P = np.eye(n)[P]
+        else:
+            Q, R = scipy.linalg.qr(X, mode="full", pivoting=False)
+            P = np.eye(n)
+
+        return Q, R, P
