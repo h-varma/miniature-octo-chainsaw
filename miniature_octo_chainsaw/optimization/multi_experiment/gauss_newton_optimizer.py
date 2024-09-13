@@ -116,7 +116,7 @@ class MultiExperimentGaussNewton(BaseMultiExperimentOptimizer):
         k = 0
         self.G = [np.array([])] * self.n_experiments
         for i in range(self.n_experiments):
-            local_rows = np.where(self.R[i].any(axis=1))[0]
+            local_rows = np.where(~np.isclose(np.sum(self.R[i], axis=1), 0))[0]
             idx = slice(k, k + len(local_rows))
             self.G[i] = J[idx, -self.n_global:]
 
