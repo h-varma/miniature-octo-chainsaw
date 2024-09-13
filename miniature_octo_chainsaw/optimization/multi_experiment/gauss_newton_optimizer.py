@@ -129,6 +129,10 @@ class MultiExperimentGaussNewton(BaseMultiExperimentOptimizer):
 
         assert np.allclose(self.j2 @ dxbar + self.f2, 0)
 
+        A = self.j2.T
+        b = self.j1.T @ (self.f1 + self.j1 @ dxbar)
+        self.lagrange_multipliers = np.linalg.lstsq(A, b)[0]
+
         return dxbar
 
     def _local_to_upper_triangular_operator(self, J: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
