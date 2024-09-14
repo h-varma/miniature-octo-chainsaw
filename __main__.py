@@ -1,6 +1,7 @@
 from miniature_octo_chainsaw.logging_ import logger
+from miniature_octo_chainsaw.select.mathematical_model import import_model
+from miniature_octo_chainsaw.select.data_file import import_data
 from miniature_octo_chainsaw.data_organizer import add_noise_to_data, filter_data
-from miniature_octo_chainsaw.models.importer import import_data, import_model
 from miniature_octo_chainsaw.parameter_estimation.initial_guess import InitialGuessGenerator
 from miniature_octo_chainsaw.parameter_estimation.problem import ParameterEstimation
 from miniature_octo_chainsaw.parameter_estimation.results import save_results_as_pickle

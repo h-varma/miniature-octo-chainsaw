@@ -4,8 +4,7 @@ import matplotlib.pyplot as plt
 from miniature_octo_chainsaw.utils import timing_decorator
 from miniature_octo_chainsaw.models.utils import nparray_to_dict
 from miniature_octo_chainsaw.parameter_estimation.subproblems import Problem
-from miniature_octo_chainsaw.optimization.multi_experiment.osqp_optimizer import MultiExperimentOSQP
-from miniature_octo_chainsaw.optimization.multi_experiment.gauss_newton_optimizer import MultiExperimentGaussNewton
+from miniature_octo_chainsaw.select.multi_experiment_optimizer import import_multi_experiment_optimizer
 from miniature_octo_chainsaw.logging_ import logger
 
 
@@ -76,12 +75,7 @@ class ParameterEstimation:
         )
         self.equality_constraints = self.problem.stack_functions
 
-        if method == "osqp":
-            self.Solver = MultiExperimentOSQP
-        elif method == "gauss-newton":
-            self.Solver = MultiExperimentGaussNewton
-        else:
-            raise Exception("Invalid parameter estimation solver method!")
+        self.Solver = import_multi_experiment_optimizer(method)
 
         if timer:
             self.__run_solver = timing_decorator(self.__run_solver)

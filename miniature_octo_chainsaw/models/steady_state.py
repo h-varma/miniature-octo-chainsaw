@@ -1,5 +1,5 @@
 import numpy as np
-from miniature_octo_chainsaw.optimization.single_experiment.local_optimizer import select_local_optimizer
+from miniature_octo_chainsaw.select.single_experiment_optimizer import import_single_experiment_optimizer
 from miniature_octo_chainsaw.logging_ import logger
 import warnings
 
@@ -36,7 +36,7 @@ def solve_rhs(
     ub = np.ones_like(x0) * np.inf
 
     logger.debug(f"Solve model equations using {local_optimizer} to get steady state.")
-    Optimizer = select_local_optimizer(local_optimizer)
+    Optimizer = import_single_experiment_optimizer(local_optimizer)
     optimizer = Optimizer(model.rhs_, x0=x0, lb=lb, ub=ub)
     optimizer.minimize(method=scipy_method, options=options)
 

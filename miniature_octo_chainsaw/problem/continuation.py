@@ -1,7 +1,7 @@
 import autograd.numpy as np
 from dataclasses import dataclass
 import matplotlib.pyplot as plt
-from miniature_octo_chainsaw.continuation.continuer import select_continuation_method
+from miniature_octo_chainsaw.select.continuer import import_continuer
 from miniature_octo_chainsaw.parameter_estimation.subproblems import Problem
 from miniature_octo_chainsaw.models.utils import dict_to_nparray, nparray_to_dict
 
@@ -34,7 +34,7 @@ def one_parameter_continuation(
     parameter = model.controls["homotopy"]
     model.parameters[parameter]["vary"] = True
 
-    Continuer = select_continuation_method(method)
+    Continuer = import_continuer(method)
 
     steady_states = Continuer(
         func=model.rhs_,
@@ -81,7 +81,7 @@ def two_parameter_continuation(
     -------
     np.ndarray : set of bifurcation points in two-parameters
     """
-    Continuer = select_continuation_method(method)
+    Continuer = import_continuer(method)
     homotopy_parameter = model.controls["homotopy"]
     free_parameter = model.controls["free"]
 

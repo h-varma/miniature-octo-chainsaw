@@ -1,5 +1,5 @@
 import autograd.numpy as np
-from miniature_octo_chainsaw.optimization.single_experiment.local_optimizer import select_local_optimizer
+from miniature_octo_chainsaw.select.single_experiment_optimizer import import_single_experiment_optimizer
 from miniature_octo_chainsaw.models.utils import nparray_to_dict, dict_to_nparray
 from miniature_octo_chainsaw.parameter_estimation.subproblems import Problem
 from miniature_octo_chainsaw.logging_ import logger
@@ -84,7 +84,7 @@ def solve_bifurcation_condition(
     else:
         lb, ub = None, None
 
-    Optimizer = select_local_optimizer(local_optimizer)
+    Optimizer = import_single_experiment_optimizer(local_optimizer)
 
     Objective = Problem(model, include_singularity=True)
     objective_function = Objective.stack_functions
