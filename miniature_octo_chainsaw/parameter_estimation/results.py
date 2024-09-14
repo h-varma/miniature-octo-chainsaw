@@ -70,9 +70,9 @@ def save_results_as_pickle(res: object, select_folder: bool = False):
     """
     model_name = res.model.name
     if select_folder:
-        dir_path = easygui.diropenbox() + "/"
+        dir_path = easygui.diropenbox() + "\\"
     else:
-        dir_path = "results/"
+        dir_path = "..\\results\\"
     file_name = model_name + "_" + time.strftime("%Y%m%d-%H%M%S")
 
     with open(dir_path + file_name + ".pkl", "wb") as f:
