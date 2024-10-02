@@ -1,15 +1,36 @@
-import numpy as np
-
-PD_ACCURACY_TOLERANCE = 1e-4
-CQ_ACCURACY_TOLERANCE = 1e-8
+import autograd.numpy as np
 
 
-def check_PD(j):
-    return np.linalg.matrix_rank(j, tol=PD_ACCURACY_TOLERANCE) == j.shape[1]
+def check_positive_definiteness(J: np.ndarray) -> bool:
+    """
+    Check if the matrix has full column rank.
+
+    Parameters
+    ----------
+    J : np.ndarray
+        matrix to check
+
+    Returns
+    -------
+    bool : True if the matrix has full column rank
+    """
+    return np.linalg.matrix_rank(J) == J.shape[1]
 
 
-def check_CQ(j):
-    if len(j):
-        if np.linalg.matrix_rank(j) != j.shape[0] and len(j.shape) > 1:
+def check_constraint_qualification(J: np.ndarray) -> bool:
+    """
+    Check if the matrix has full row rank.
+
+    Parameters
+    ----------
+    J : np.ndarray
+        matrix to check
+
+    Returns
+    -------
+    bool : True if the matrix has full row rank
+    """
+    if len(J):
+        if np.linalg.matrix_rank(J) != J.shape[0] and len(J.shape) > 1:
             raise Exception("CQ failed!")
     return True

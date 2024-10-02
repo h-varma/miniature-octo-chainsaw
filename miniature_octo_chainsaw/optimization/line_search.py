@@ -4,6 +4,25 @@ from autograd import grad
 
 
 def line_search(x: np.ndarray, dx: np.ndarray, func: callable, strategy: str) -> float:
+    """
+    Find the step length using the line search.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        current point
+    dx : np.ndarray
+        search direction
+    func : callable
+        objective function
+    strategy : str
+        line search strategy
+
+    Returns
+    -------
+    float : step length
+    """
+
     if strategy == "exact":
 
         def step_finder(t_):
