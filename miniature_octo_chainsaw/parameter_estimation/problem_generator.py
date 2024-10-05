@@ -2,7 +2,7 @@ import autograd.numpy as np
 from miniature_octo_chainsaw.models.utils import nparray_to_dict
 
 
-class Problem:
+class OptimizationProblemGenerator:
     """Define all the subproblems of the parameter estimation problem."""
 
     def __init__(

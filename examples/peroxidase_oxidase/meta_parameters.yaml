@@ -1,0 +1,45 @@
+model_name: 'peroxidase_oxidase'
+
+# noise generator
+
+data_noise:
+  scale: 0.05
+  description: 'how much noise to add to the data - (scale x 100)%'
+
+parameter_noise:
+  scale: 1
+  description: 'how much noise to add to the parameters - (scale x 100)%'
+
+# IVP solver
+
+integration_time:
+  start: 0
+  end: 100
+
+# one-parameter bifurcation diagram
+
+bifurcation:
+  type: 'saddle-node'
+
+h_parameter:
+  name: 'k4'
+  min_value: 0
+  max_value: 10
+  step_size: 0.05
+  description: 'homotopy parameter'
+
+# two-parameter bifurcation diagram
+
+f_parameter:
+  name: 'k5'
+  description: 'free parameter'
+
+# parameter estimation problem
+
+global_parameters:
+  - 'k1'
+  - 'k2'
+
+residual:
+  scale: 'linear'
+  type: 'absolute'

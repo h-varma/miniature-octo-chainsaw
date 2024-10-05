@@ -1,5 +1,5 @@
 import autograd.numpy as np
-from miniature_octo_chainsaw.models.steinmetz_larter.settings import ModelSettings
+from problem_specifications import ProblemSpecs
 from miniature_octo_chainsaw.models.utils import nparray_to_dict
 from miniature_octo_chainsaw.models.base_model import BaseModel
 
@@ -12,7 +12,7 @@ class Model(BaseModel):
 
     Attributes
     ----------
-    settings : dataclass
+    specifications : dataclass
         model information, parameters and settings
 
     Methods
@@ -26,7 +26,7 @@ class Model(BaseModel):
 
     def __init__(self):
         super().__init__()
-        self.settings = ModelSettings()
+        self.specifications = ProblemSpecs()
         self._initialize_parameters(parameters=self.true_parameters)
 
     def rhs_(self, x: np.ndarray) -> np.ndarray:

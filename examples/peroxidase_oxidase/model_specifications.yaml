@@ -1,0 +1,63 @@
+model_name: 'peroxidase_oxidase'
+
+# model compartments - make sure that the order matches the order of model equations
+
+compartment_1:
+  name: 'x1'
+  value: 0
+  min_value: -.inf
+  max_value: .inf
+  description: 'Concentration of NAD*'
+
+compartment_2:
+  name: 'x2'
+  value: 0
+  min_value: -.inf
+  max_value: .inf
+  description: 'Concentration of O2'
+
+compartment_to_plot: 'x1'
+
+# model parameters and controls
+
+parameter_1:
+  name: 'k1'
+  true_value: 0.2
+  min_value: 0
+  max_value: .inf
+  description: 'Rate constant for NAD* outflow'
+
+parameter_2:
+  name: 'k2'
+  true_value: 1.75
+  min_value: 0
+  max_value: .inf
+  description: 'Rate constant for NAD* inflow'
+
+parameter_3:
+  name: 'k3'
+  true_value: 2.75
+  min_value: 0
+  max_value: .inf
+  description: 'Rate constant for autocatalytic formation of NAD*'
+
+parameter_4:
+  name: 'k4'
+  true_value: 0.3
+  min_value: 0
+  max_value: .inf
+  description: 'Rate constant for NAD* oxidation by O2'
+
+parameter_5:
+  name: 'k5'
+  true_value: 5
+  min_value: 0
+  max_value: .inf
+  description: 'Rate constant for O2 inflow'
+
+parameter_6:
+  name: 'k6'
+  true_value: 0.14
+  min_value: 0
+  max_value: .inf
+  description: 'Rate constant for O2 outflow'

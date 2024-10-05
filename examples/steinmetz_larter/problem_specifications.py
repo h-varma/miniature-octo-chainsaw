@@ -1,10 +1,11 @@
 import numpy as np
 from dataclasses import dataclass
-from miniature_octo_chainsaw.models.utils import default
+from miniature_octo_chainsaw.objects import ProblemSpecification
+
 
 
 @dataclass
-class ModelSettings:
+class ProblemSpecs:
     name: str = "steinmetz_larter"
     compartments: list = default(["A", "B", "X", "Y"])
     plot_compartment: str = "A"

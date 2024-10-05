@@ -4,7 +4,7 @@ from miniature_octo_chainsaw.models.utils import default
 
 
 @dataclass
-class ModelSettings:
+class ProblemSpecs:
     name: str = "predator_prey"
     compartments: list = default(["N", "C", "R", "B"])
     plot_compartment: str = "N"

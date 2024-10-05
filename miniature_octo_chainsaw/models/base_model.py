@@ -5,7 +5,7 @@ from scipy.stats import truncnorm
 
 class BaseModel(ABC):
     """
-    Base class for all models - not functional on its own.
+    Base class for all model - not functional on its own.
     """
 
     def __init__(self):
@@ -81,7 +81,7 @@ class BaseModel(ABC):
 
     def __getattr__(self, attr: str):
         """
-        Set the attributes from the settings object as attributes of self.
+        Set the attributes from the ProblemSpecs object as attributes of self.
 
         Parameters
         ----------
@@ -92,4 +92,4 @@ class BaseModel(ABC):
         -------
         object : attribute value
         """
-        return getattr(self.settings, attr)
+        return getattr(self.specifications, attr)

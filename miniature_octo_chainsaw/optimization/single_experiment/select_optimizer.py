@@ -1,4 +1,4 @@
-def import_single_experiment_optimizer(optimizer: str):
+def import_optimizer(optimizer: str):
     """
     Return a single experiment optimizer.
 

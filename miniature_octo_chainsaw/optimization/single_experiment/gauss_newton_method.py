@@ -5,13 +5,26 @@ import autograd.numpy as np
 from autograd import jacobian
 from scipy.optimize import minimize
 
-from miniature_octo_chainsaw.optimization.check_regularity import check_CQ
-from miniature_octo_chainsaw.optimization.single_experiment.line_search import line_search
-from miniature_octo_chainsaw.utils import where_negative, where_positive, where_zero
+from miniature_octo_chainsaw.optimization.check_regularity import check_constraint_qualification
+from miniature_octo_chainsaw.optimization.line_search import line_search
 from miniature_octo_chainsaw.optimization.single_experiment.base_optimizer import OptimizerResult
 
 
 class GeneralizedGaussNewton:
+    """
+    Generalized Gauss-Newton method for constrained optimization.
+
+    Parameters
+    ----------
+    objective : callable
+        objective function
+
+    constraints : dict
+        dictionary containing the equality and inequality constraints
+
+    x0 : np.ndarray
+        initial guess
+    """
     def __init__(
         self,
         objective: callable,
@@ -52,6 +65,7 @@ class GeneralizedGaussNewton:
         self.minimize()
 
     def minimize(self):
+        """Solve the optimization problem."""
         sol = dict()
         sol["x"] = np.copy(self.x0)
         for i in range(self.max_iters):
@@ -87,6 +101,20 @@ class GeneralizedGaussNewton:
             self.result.message = "Maximum number of iterations reached."
 
     def check_feasibility(self, dy: np.ndarray, sol: dict) -> float:
+        """
+        Feasibility of the linearization at the current solution measured by constraint violation.
+        
+        Parameters
+        ----------
+        dy : np.ndarray
+            step direction
+        sol : dict
+            dictionary containing the current solution
+            
+        Returns
+        -------
+        float : constraint violation
+        """
         constraint_violation = 0
         if self.f2_func is not None:
             f2_violation = sol["f2"] + np.dot(sol["j2"], dy)
@@ -98,6 +126,18 @@ class GeneralizedGaussNewton:
         return constraint_violation
 
     def get_feasible_point(self, sol: dict) -> np.ndarray:
+        """
+        Get a feasible solution starting from the initial guess sol.
+        
+        Parameters
+        ----------
+        sol : dict
+            dictionary containing the current solution
+            
+        Returns
+        -------
+        np.ndarray : feasible solution
+        """
         x0 = np.zeros_like(sol["x"])
         res = minimize(
             self.check_feasibility,
@@ -111,17 +151,40 @@ class GeneralizedGaussNewton:
 
     @staticmethod
     def values_of_inactive_constraints(dx: np.ndarray, sol: dict) -> np.ndarray:
+        """
+        Linearization of the inactive inequality constraints at the current solution.
+
+        Parameters
+        ----------
+        dx : np.ndarray
+            step direction
+        sol : dict
+            dictionary containing the current solution
+
+        """
         bbar = np.nan * np.ones_like(sol["f3"])
         linearized_constraint = sol["f3"] + np.dot(sol["j3"], dx)
         bbar[sol["inactive"]] = linearized_constraint[sol["inactive"]]
         return bbar
 
     def active_set_strategy(self, sol: dict) -> np.ndarray:
+        """
+        Active set strategy for solving the inequality-constrained optimization problem.
+
+        Parameters
+        ----------
+        sol : dict
+            dictionary containing the current solution
+
+        Returns
+        -------
+        np.ndarray : step direction
+        """
         dx = self.get_feasible_point(sol=sol)
 
         linearized_constraint = sol["f3"] + np.dot(sol["j3"], dx)
-        sol["active"] = where_zero(linearized_constraint, tol=self.zero)
-        sol["inactive"] = where_positive(linearized_constraint, tol=self.zero)
+        sol["active"] = self.where_zero(linearized_constraint, tol=self.zero)
+        sol["inactive"] = self.where_positive(linearized_constraint, tol=self.zero)
 
         b = np.nan * np.ones_like(sol["f3"])
         b[sol["inactive"]] = linearized_constraint[sol["inactive"]]
@@ -141,7 +204,7 @@ class GeneralizedGaussNewton:
 
             while (bbar < -self.zero).any():
                 # find the indices of the previously inactive inequality constraints that have now become negative
-                idx = where_negative(bbar, tol=self.zero)
+                idx = self.where_negative(bbar, tol=self.zero)
                 # add a new active inequality constraint by taking the constraint that drops the most to negative values
                 # and finding its active form along the line between bbar and b[mu-1]
                 a_fun = np.inf * np.ones_like(bbar)
@@ -200,6 +263,17 @@ class GeneralizedGaussNewton:
         return dx
 
     def compute_adjoint_variables(self, dx: np.ndarray, sol: dict):
+        """
+        Compute the adjoint variables for the equality and inequality constraints.
+
+        Parameters
+        ----------
+        dx : np.ndarray
+            step direction
+        sol : dict
+            dictionary containing the current solution
+        """
+
         n = sol["j1"].shape[1]
         jc = np.row_stack((sol["j2"].reshape((-1, n)), sol["j3"].reshape((-1, n))))
         Q, R = np.linalg.qr(jc.T, mode="complete")
@@ -209,6 +283,19 @@ class GeneralizedGaussNewton:
 
     @staticmethod
     def __compute_step_direction(sol: dict) -> np.ndarray:
+        """
+        Compute the step direction for the equality-constrained optimization problem.
+
+        Parameters
+        ----------
+        sol : dict
+            dictionary containing the current solution
+
+        Returns
+        -------
+        np.ndarray : step direction
+        """
+
         n1 = sol["j1"].shape[1]
         f2 = sol["f2"] if sol["f2"].size else np.zeros((0,))
         j2 = sol["j2"] if sol["f2"].size else np.zeros((0, n1))
@@ -220,7 +307,7 @@ class GeneralizedGaussNewton:
         Jc = np.row_stack((j2, j3))
 
         if fc.size:
-            check_CQ(j=Jc)
+            check_constraint_qualification(j=Jc)
             Q, R = np.linalg.qr(Jc.T, mode="complete")
             Rbar = R[: R.shape[1], : R.shape[1]]
             dy1 = -np.dot(Rbar.T, fc)
@@ -236,6 +323,19 @@ class GeneralizedGaussNewton:
             return np.linalg.lstsq(sol["j1"], -sol["f1"])[0]
 
     def level_function(self, x) -> float:
+        """
+        Compute the value of the level function.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            solution value
+
+        Returns
+        -------
+        float : value of the level function
+        """
+
         alpha, beta = 1, 1
         sum_ = 0
         m2 = 0 if self.f2_func is None else self.f2_func(x).shape[0]
@@ -251,3 +351,53 @@ class GeneralizedGaussNewton:
             sum_ += np.sum(beta * f3)
         sum_ += (1 / 2) * np.linalg.norm(self.f1_func(x)) ** 2
         return sum_
+
+    @staticmethod
+    def where_zero(x: np.ndarray, tol: float = 1e-6) -> np.ndarray:
+        """
+        Return indices of x where x is zero.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            input array
+        tol : float
+            tolerance for zero
+
+        Returns
+        -------
+        np.ndarray : indices of x where x is almost zero
+        """
+        return np.where(np.isclose(x, 0, atol=tol))[0]
+
+    @staticmethod
+    def where_positive(x: np.ndarray, tol: float = 1e-6) -> np.ndarray:
+        """
+        Return indices of x where x is positive.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            input array
+        tol : float
+            tolerance for zero
+
+        Returns
+        -------
+        np.ndarray : indices of x where x is positive
+        """
+        return np.where(x > tol)[0]
+
+    @staticmethod
+    def where_negative(x: np.ndarray, tol: float = 1e-6) -> np.ndarray:
+        """
+        Return indices of x where x is negative.
+        
+        Parameters
+        ----------
+        x : np.ndarray
+            input array
+        tol : float
+            precision for negative
+        """
+        return np.where(x < -tol)[0]    

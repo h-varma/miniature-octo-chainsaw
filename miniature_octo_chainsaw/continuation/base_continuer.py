@@ -1,7 +1,7 @@
 import autograd.numpy as np
 from typing import Union, List, Tuple
 from autograd import jacobian
-from miniature_octo_chainsaw.select.single_experiment_optimizer import import_single_experiment_optimizer
+from miniature_octo_chainsaw.optimization.single_experiment.select_optimizer import import_optimizer
 
 
 class Continuer:
@@ -126,7 +126,7 @@ class Continuer:
         -------
         np.ndarray : solution to the system of equations
         """
-        Optimizer = import_single_experiment_optimizer(self.local_optimizer)
+        Optimizer = import_optimizer(self.local_optimizer)
         optimizer = Optimizer(func, x0=x0, lb=lb, ub=ub)
         try:
             optimizer.minimize(method=method)

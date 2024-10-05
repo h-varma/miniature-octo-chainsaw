@@ -1,10 +1,5 @@
 import autograd.numpy as np
 from typing import Union, Tuple, List
-from dataclasses import field
-
-
-def default(value: Union[dict, list, np.ndarray]):
-    return field(default_factory=lambda: value)
 
 
 def nparray_to_dict(x: np.ndarray, model: object) -> Tuple[dict, dict, dict]:
