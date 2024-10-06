@@ -2,10 +2,13 @@ import autograd.numpy as np
 from abc import ABC, abstractmethod
 import matplotlib.pyplot as plt
 from scipy.stats import chi2
-from miniature_octo_chainsaw.optimization.single_experiment.base_optimizer import BaseOptimizer
-from miniature_octo_chainsaw.optimization.check_regularity import check_CQ, check_PD
-from miniature_octo_chainsaw.optimization.multi_experiment.line_search import line_search
-from miniature_octo_chainsaw.logging_ import logger
+from ...optimization.single_experiment.base_optimizer import BaseOptimizer
+from ...optimization.check_regularity import (
+    check_constraint_qualification,
+    check_positive_definiteness,
+)
+from ...optimization.line_search import line_search
+from ...logging_ import logger
 
 
 class BaseMultiExperimentOptimizer(BaseOptimizer, ABC):
@@ -41,7 +44,7 @@ class BaseMultiExperimentOptimizer(BaseOptimizer, ABC):
             self.f = self._function_evaluation(x=x)
             self.J = self._jacobian_evaluation(x=x)
 
-            if not check_PD(j=self.J):
+            if not check_positive_definiteness(self.J):
                 logger.warn(f"Positive definiteness does not hold in iterate {i}!")
 
             dxbar = self.solve_linearized_system()
@@ -106,9 +109,8 @@ class BaseMultiExperimentOptimizer(BaseOptimizer, ABC):
         raise NotImplementedError
 
     def _compute_confidence_intervals(
-            self,
-            x: np.ndarray,
-            significance: float = 0.05) -> np.ndarray:
+        self, x: np.ndarray, significance: float = 0.05
+    ) -> np.ndarray:
         """
         Compute confidence intervals for solution vector.
 
@@ -166,7 +168,7 @@ class BaseMultiExperimentOptimizer(BaseOptimizer, ABC):
         local_x = x[: -self.n_global]
         local_x = local_x.reshape(self.n_experiments, self.n_local)
 
-        global_x = x[-self.n_global:]
+        global_x = x[-self.n_global :]
         global_x = global_x.reshape(-1, 1)
         global_x = np.tile(global_x, self.n_experiments)
 
@@ -192,7 +194,7 @@ class BaseMultiExperimentOptimizer(BaseOptimizer, ABC):
 
         x = self.split_into_experiments(x)
         for i in range(self.n_experiments):
-            f1 = self.f1[i * self.n_observables: (i + 1) * self.n_observables]
+            f1 = self.f1[i * self.n_observables : (i + 1) * self.n_observables]
             f2 = self.f2_fun(x[i])
             f = np.concatenate((f, f2, f1))
             self.f2 = np.concatenate((self.f2, f2))
@@ -220,7 +222,7 @@ class BaseMultiExperimentOptimizer(BaseOptimizer, ABC):
 
         x = self.split_into_experiments(x)
         for i in range(self.n_experiments):
-            j1 = self.j1[i * self.n_observables: (i + 1) * self.n_observables]
+            j1 = self.j1[i * self.n_observables : (i + 1) * self.n_observables]
 
             n_rows = self.j2_fun(x[i]).shape[0]
             j2 = np.zeros((n_rows, n_cols))
@@ -228,12 +230,14 @@ class BaseMultiExperimentOptimizer(BaseOptimizer, ABC):
             local_idx = slice(i * self.n_local, (i + 1) * self.n_local)
             global_idx = slice(self.n_experiments * self.n_local, None)
             j2[:, local_idx] = j2_[:, : self.n_local]
-            j2[:, global_idx] = j2_[:, self.n_local:]
-            assert check_CQ(j2), f"Experiment {i}: No constraint qualification!"
+            j2[:, global_idx] = j2_[:, self.n_local :]
+            assert check_constraint_qualification(
+                j2
+            ), f"Experiment {i}: No constraint qualification!"
 
             J = np.row_stack((J, j2, j1))
             self.j2 = np.row_stack((self.j2, j2))
-        assert check_CQ(self.j2), "Constraint qualification does not hold!"
+        assert check_constraint_qualification(self.j2), "Constraint qualification does not hold!"
 
         return J
 

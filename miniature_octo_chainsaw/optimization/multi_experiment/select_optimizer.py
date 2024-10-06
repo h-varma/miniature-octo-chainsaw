@@ -12,12 +12,12 @@ def import_optimizer(optimizer: str):
     object : optimizer object
     """
     if optimizer == "osqp":
-        from miniature_octo_chainsaw.optimization.multi_experiment.osqp_optimizer import MultiExperimentOSQP
+        from ...optimization.multi_experiment.osqp_optimizer import MultiExperimentOSQP
 
         return MultiExperimentOSQP
 
     elif optimizer == "gauss-newton":
-        from miniature_octo_chainsaw.optimization.multi_experiment.gauss_newton_optimizer import MultiExperimentGaussNewton
+        from ...optimization.multi_experiment.gauss_newton_optimizer import MultiExperimentGaussNewton
 
         return MultiExperimentGaussNewton
 

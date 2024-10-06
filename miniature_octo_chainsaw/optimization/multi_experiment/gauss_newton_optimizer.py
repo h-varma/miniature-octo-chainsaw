@@ -2,8 +2,8 @@ import autograd.numpy as np
 from autograd import jacobian
 import scipy
 from typing import Tuple
-from miniature_octo_chainsaw.optimization.multi_experiment.base_optimizer import BaseMultiExperimentOptimizer
-from miniature_octo_chainsaw.logging_ import logger
+from ...optimization.multi_experiment.base_optimizer import BaseMultiExperimentOptimizer
+from ...logging_ import logger
 
 
 class MultiExperimentGaussNewton(BaseMultiExperimentOptimizer):

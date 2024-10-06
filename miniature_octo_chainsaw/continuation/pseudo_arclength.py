@@ -1,8 +1,8 @@
 import copy
 from bisect import bisect, bisect_left
 import autograd.numpy as np
-from miniature_octo_chainsaw.continuation.base_continuer import Continuer
-from miniature_octo_chainsaw.logging_ import logger
+from ..continuation.base_continuer import Continuer
+from ..logging_ import logger
 
 
 class PseudoArclengthContinuation(Continuer):
@@ -126,9 +126,7 @@ class PseudoArclengthContinuation(Continuer):
                 if self.data is not None:
                     step = self._trace_data(x=p, dx=dp, step=step, direction=direction)
 
-                x_, p_, step, success = self._corrector_step(
-                    x0=x, dx0=dx, p0=p, dp0=dp, step=step
-                )
+                x_, p_, step, success = self._corrector_step(x0=x, dx0=dx, p0=p, dp0=dp, step=step)
 
                 if success is True:
                     x, p = x_.copy(), p_
@@ -136,7 +134,9 @@ class PseudoArclengthContinuation(Continuer):
             if p < p_min or p > p_max or step < self.p_step_min:
                 break
 
-            logger.debug(f"Continued solution to parameter value: {p} in {self._direction_str[direction]} direction.")
+            logger.debug(
+                f"Continued solution to parameter value: {p} in {self._direction_str[direction]} direction."
+            )
             self._parameters.append(p)
             self._solutions.append(x)
 
@@ -149,9 +149,7 @@ class PseudoArclengthContinuation(Continuer):
                 logger.debug(f"Changing directions: {old_direction} -> {new_direction}")
             direction = np.sign(dx.T @ step_vector + dp)
 
-    def _trace_data(
-        self, x: np.ndarray, dx: np.ndarray, step: float, direction: int
-    ) -> float:
+    def _trace_data(self, x: np.ndarray, dx: np.ndarray, step: float, direction: int) -> float:
         """
         Adjust step size to trace measurements.
 
@@ -178,9 +176,7 @@ class PseudoArclengthContinuation(Continuer):
         self.flag = True
         return (x_tilde - x) / dx
 
-    def _corrector_step(
-        self, x0: np.ndarray, dx0: np.ndarray, p0: float, dp0: float, step: float
-    ):
+    def _corrector_step(self, x0: np.ndarray, dx0: np.ndarray, p0: float, dp0: float, step: float):
         """
         Perform a corrector step to find a solution.
 

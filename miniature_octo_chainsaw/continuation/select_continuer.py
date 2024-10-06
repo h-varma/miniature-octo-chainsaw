@@ -12,12 +12,12 @@ def import_continuer(method: str):
     object : continuation object
     """
     if method == "deflated":
-        from miniature_octo_chainsaw.continuation.deflated_continuation import DeflatedContinuation
+        from ..continuation.deflated_continuation import DeflatedContinuation
 
         return DeflatedContinuation
 
     elif method == "pseudo-arclength":
-        from miniature_octo_chainsaw.continuation.pseudo_arclength import PseudoArclengthContinuation
+        from ..continuation.pseudo_arclength import PseudoArclengthContinuation
 
         return PseudoArclengthContinuation
 

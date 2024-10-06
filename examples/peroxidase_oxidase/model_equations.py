@@ -1,5 +1,6 @@
+import os
 import autograd.numpy as np
-from problem_specifications import ProblemSpecs
+from miniature_octo_chainsaw.parser.yaml_parser import YamlParser
 from miniature_octo_chainsaw.models.utils import nparray_to_dict
 from miniature_octo_chainsaw.models.base_model import BaseModel
 
@@ -26,7 +27,9 @@ class Model(BaseModel):
 
     def __init__(self):
         super().__init__()
-        self.specifications = ProblemSpecs()
+        file_path = os.path.dirname(__file__)
+        parser = YamlParser(file_path=file_path)
+        self.specifications = parser.get_problem_specifications()
         self._initialize_parameters(parameters=self.true_parameters)
 
     def rhs_(self, x: np.ndarray) -> np.ndarray:

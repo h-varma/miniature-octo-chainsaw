@@ -1,4 +1,5 @@
 import autograd.numpy as np
+from ..models.utils import nparray_to_dict
 
 
 def match_solutions_to_data(model: object, solutions: list) -> np.ndarray:
@@ -15,6 +16,7 @@ def match_solutions_to_data(model: object, solutions: list) -> np.ndarray:
     Returns
     -------
     np.ndarray : initial guess
+    np.ndarray : boolean array to mask unused data points
     """
 
     h_param = model.controls["homotopy"]
@@ -29,7 +31,7 @@ def match_solutions_to_data(model: object, solutions: list) -> np.ndarray:
 
     initial_guess = []
     mask = np.ones(len(model.data))
-    
+
     for h_value in np.unique(h_data):
         where_h = np.where(np.isclose(h_params, h_value))[0]
         count_h = len(where_h)
@@ -57,12 +59,12 @@ def match_solutions_to_data(model: object, solutions: list) -> np.ndarray:
             mask[np.isclose(h_data, h_value)] = 0
 
     # sort the initial guesses and experimental data so that they match
-    initial_guess.sort(key=lambda x: get_parameter_value(x, "h"))
+    initial_guess.sort(key=lambda x: get_parameter_value(x, type_="h", model=model))
     iterable_ = zip(model.data, mask)
     iterable_ = sorted(iterable_, key=lambda x: x[0][h_param])
 
     model.data, mask = (list(x) for x in zip(*iterable_))
-    return np.hstack(initial_guess)
+    return np.hstack(initial_guess), mask
 
 
 def get_parameter_value(x: np.ndarray, type_: str, model: object) -> float:

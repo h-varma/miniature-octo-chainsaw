@@ -26,7 +26,6 @@ def get_results(res: object):
     result["model"]["name"] = res.model.name
     result["model"]["parameters"] = res.model.parameters
     result["model"]["compartments"] = res.model.compartments
-    result["model"]["non_negative"] = res.model.non_negative
     result["model"]["controls"] = res.model.controls
     result["model"]["global_parameters"] = res.model.global_parameters
 

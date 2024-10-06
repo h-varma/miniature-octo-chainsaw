@@ -1,22 +1,49 @@
 import sys
 import os
 
-# Add the root directory of the project to the Python path
-folder_path = os.path.dirname(__file__)
-sys.path.append(os.path.abspath(os.path.join(folder_path, '../..')))
+file_path = os.path.dirname(__file__)
+sys.path.append(os.path.abspath(os.path.join(file_path, "../..")))
 
-import pandas as pd
-# from model_equations import Model
-from miniature_octo_chainsaw.parser.yaml_parser import YamlParser
+from model_equations import Model
 from miniature_octo_chainsaw.logging_ import logger
+from miniature_octo_chainsaw.preprocessing.preprocess_data import DataPreprocessor
+from miniature_octo_chainsaw.parameter_estimation.initial_guess import InitialGuessGenerator
+from miniature_octo_chainsaw.parameter_estimation.parameter_estimator import ParameterEstimator
+from miniature_octo_chainsaw.parameter_estimation.results import save_results_as_pickle
 
 
-# model = Model()
-data = pd.read_table(folder_path + "/data.dat", sep=" ")
+def main():
 
-# model.generate_parameter_guesses()
-# logger.info(f"True model parameters: {model.true_parameters}")
-# logger.info(f"Parameter guess initialization: {model.parameters}")
+    logger.setLevel("INFO")
 
-parser = YamlParser(file_path=folder_path)
-problem_specifications = parser.get_problem_specifications()
+    # Load the model and randomize the parameters
+    model = Model()
+    model.generate_parameter_guesses()
+
+    # Preprocess the data
+    data_preprocessor = DataPreprocessor()
+    data_preprocessor.load_the_data(file_path=file_path)
+    data_preprocessor.add_noise_to_the_data(scale=model.data_noise)
+    data_preprocessor.select_subset_of_data(length=25)
+    model.data = data_preprocessor.data
+
+    # Generate initial guesses for the parameter estimation
+    initializer = InitialGuessGenerator(model=model)
+
+    # Solve parameter estimation problem
+    fit = ParameterEstimator(
+        x0=initializer.initial_guesses,
+        mask=initializer.mask,
+        model=model,
+        n_experiments=int(sum(initializer.mask)),
+        method="gauss-newton",
+        plot_iters=True,
+        compute_ci=False,
+        timer=False,
+    )
+
+    # save_results_as_pickle(res=fit)
+
+
+if __name__ == "__main__":
+    main()

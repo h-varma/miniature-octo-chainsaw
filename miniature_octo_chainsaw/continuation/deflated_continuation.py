@@ -4,8 +4,8 @@ import autograd.numpy as np
 from autograd import jacobian
 import scipy
 from scipy.spatial.distance import cdist
-from miniature_octo_chainsaw.continuation.base_continuer import Continuer
-from miniature_octo_chainsaw.logging_ import logger
+from ..continuation.base_continuer import Continuer
+from ..logging_ import logger
 
 rng = np.random.default_rng(0)
 
@@ -127,11 +127,10 @@ class DeflatedContinuation(Continuer):
                         success = True
                         self._solutions[-1].append(sol)
 
-            solutions = [sol for sol in self._solutions[-1] if (sol >= 0).all()]
+            solutions = copy.deepcopy(self._solutions[-1])
             count_ = len(solutions)
             logger.debug(f"Found {count_} solutions at parameter value: {p}.")
 
-            self._solutions[-1] = solutions
             self._solutions.append([])
 
             # continue existing branches
@@ -179,9 +178,7 @@ class DeflatedContinuation(Continuer):
             _sol = self._join_x_vector_and_p(_x, p1)
             return self.func(_sol)
 
-        x, _ = self._solve_optimization_problem(
-            corrector, x0=x1, lb=self.lb, ub=self.ub
-        )
+        x, _ = self._solve_optimization_problem(corrector, x0=x1, lb=self.lb, ub=self.ub)
         if x is None:
             return None
 
@@ -212,9 +209,7 @@ class DeflatedContinuation(Continuer):
                 df = np.dot(self._deflation_operator(_x, solution), df)
             return df
 
-        x, _ = self._solve_optimization_problem(
-            _deflated_corrector, x0=x0, lb=self.lb, ub=self.ub
-        )
+        x, _ = self._solve_optimization_problem(_deflated_corrector, x0=x0, lb=self.lb, ub=self.ub)
         if x is None:
             return None
 
@@ -304,9 +299,7 @@ class DeflatedContinuation(Continuer):
                     self.solutions[i][[row, col]] = self.solutions[i][[col, row]]
                     dist_[[row, col]] = dist_[[col, row]]
                     if i == 1:
-                        self.solutions[0] = self._insert_nan_rows(
-                            self.solutions[0], row
-                        )
+                        self.solutions[0] = self._insert_nan_rows(self.solutions[0], row)
 
                 elif current_size < previous_size and row != col:
                     self.solutions[i] = self._insert_nan_rows(self.solutions[i], row)
@@ -488,14 +481,10 @@ class DeflatedContinuation(Continuer):
                 "Try using different initial guesses or expand the parameter range."
             )
         elif len(branches) == 1:
-            logger.info(
-                f"A bifurcation was detected near {parameter} = {branches[0][self.p_idx]}."
-            )
+            logger.info(f"A bifurcation was detected near {parameter} = {branches[0][self.p_idx]}.")
             return branches[0]
         else:
-            logger.info(
-                f"Bifurcations were detected near the following values of {parameter}:"
-            )
+            logger.info(f"Bifurcations were detected near the following values of {parameter}:")
             for i, branch in enumerate(branches):
                 logger.info(f"{i + 1}: {branch[self.p_idx]}")
             idx = int(input("Select a bifurcation point for continuation: "))

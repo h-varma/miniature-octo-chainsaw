@@ -1,9 +1,9 @@
 import autograd.numpy as np
 from dataclasses import dataclass
 import matplotlib.pyplot as plt
-from miniature_octo_chainsaw.continuation.select_continuer import import_continuer
-from miniature_octo_chainsaw.parameter_estimation.problem_generator import OptimizationProblemGenerator
-from miniature_octo_chainsaw.models.utils import dict_to_nparray, nparray_to_dict
+from ..continuation.select_continuer import import_continuer
+from ..parameter_estimation.problem_generator import OptimizationProblemGenerator
+from ..models.utils import dict_to_nparray, nparray_to_dict
 
 
 def trace_measured_bifurcations(

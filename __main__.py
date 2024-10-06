@@ -26,7 +26,7 @@ def main(MODEL_NAME):
     logger.info(f"Loaded {len(data)} data points with {model.data_noise * 100}% noise.")
 
     # Generate initial guesses for the parameter estimation
-    igGenerator = InitialGuessGenerator(model=model)
+    igGenerator = InitialGuessGenerator(self.model=model)
 
     # Solve parameter estimation problem
     PE = ParameterEstimation(

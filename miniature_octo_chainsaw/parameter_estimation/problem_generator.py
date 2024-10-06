@@ -1,5 +1,5 @@
 import autograd.numpy as np
-from miniature_octo_chainsaw.models.utils import nparray_to_dict
+from ..models.utils import nparray_to_dict
 
 
 class OptimizationProblemGenerator:

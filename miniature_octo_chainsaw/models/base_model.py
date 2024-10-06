@@ -1,6 +1,7 @@
-from abc import abstractmethod, ABC
 import autograd.numpy as np
+from abc import abstractmethod, ABC
 from scipy.stats import truncnorm
+from ..logging_ import logger
 
 
 class BaseModel(ABC):
@@ -78,6 +79,9 @@ class BaseModel(ABC):
                 parameter_value = truncnorm.rvs(a=a, b=b, loc=loc, scale=scale)
                 parameter_value = float(parameter_value)
             self.parameters[parameter_name] = {"value": parameter_value, "vary": False}
+
+        logger.info(f"True model parameters: {self.true_parameters}")
+        logger.info(f"Parameter guess initialization: {self.parameters}")
 
     def __getattr__(self, attr: str):
         """

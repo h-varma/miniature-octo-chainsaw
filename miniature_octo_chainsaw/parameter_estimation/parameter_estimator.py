@@ -1,11 +1,11 @@
 import autograd.numpy as np
 from itertools import compress
 import matplotlib.pyplot as plt
-from miniature_octo_chainsaw.utils import timing_decorator
-from miniature_octo_chainsaw.models.utils import nparray_to_dict
-from miniature_octo_chainsaw.parameter_estimation.parameter_estimator import OptimizationProblemGenerator
-from miniature_octo_chainsaw.optimization.multi_experiment.select_optimizer import import_optimizer
-from miniature_octo_chainsaw.logging_ import logger
+from ..utils.timer import timing_decorator
+from ..models.utils import nparray_to_dict
+from ..parameter_estimation.problem_generator import OptimizationProblemGenerator
+from ..optimization.multi_experiment.select_optimizer import import_optimizer
+from ..logging_ import logger
 
 
 class ParameterEstimator:

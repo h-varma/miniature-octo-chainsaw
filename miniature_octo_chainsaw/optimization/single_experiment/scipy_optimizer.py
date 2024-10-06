@@ -3,7 +3,7 @@ import autograd.numpy as np
 import scipy.optimize
 import warnings
 from typing import Union, List
-from miniature_octo_chainsaw.optimization.single_experiment.base_optimizer import BaseOptimizer
+from ...optimization.single_experiment.base_optimizer import BaseOptimizer
 
 
 class ScipyOptimizer(BaseOptimizer):

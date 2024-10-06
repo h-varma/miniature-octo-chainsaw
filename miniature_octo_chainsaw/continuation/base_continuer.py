@@ -1,7 +1,7 @@
 import autograd.numpy as np
 from typing import Union, List, Tuple
 from autograd import jacobian
-from miniature_octo_chainsaw.optimization.single_experiment.select_optimizer import import_optimizer
+from ..optimization.single_experiment.select_optimizer import import_optimizer
 
 
 class Continuer:

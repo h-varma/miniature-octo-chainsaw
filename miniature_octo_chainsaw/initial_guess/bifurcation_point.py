@@ -1,19 +1,19 @@
 import autograd.numpy as np
 from dataclasses import dataclass
 import matplotlib.pyplot as plt
-from miniature_octo_chainsaw.continuation.select_continuer import import_continuer
-from miniature_octo_chainsaw.optimization.single_experiment.select_optimizer import import_optimizer
-from miniature_octo_chainsaw.parameter_estimation.functions import OptimizationProblemGenerator
-from miniature_octo_chainsaw.models.utils import dict_to_nparray, nparray_to_dict
-from miniature_octo_chainsaw.logging_ import logger
+from ..continuation.select_continuer import import_continuer
+from ..optimization.single_experiment.select_optimizer import import_optimizer
+from ..parameter_estimation.problem_generator import OptimizationProblemGenerator
+from ..models.utils import dict_to_nparray, nparray_to_dict
+from ..logging_ import logger
 
 
 def find_bifurcation_point(
-        x0: np.ndarray,
-        model: dataclass,
-        continuer_name: str = "deflated",
-        optimizer_name: str = "scipy",
-        ) -> object:
+    x0: np.ndarray,
+    model: dataclass,
+    continuer_name: str = "deflated",
+    optimizer_name: str = "scipy",
+) -> object:
     """
     Find a bifurcation point starting from the steady state x0.
 
@@ -34,8 +34,9 @@ def find_bifurcation_point(
     """
 
     # continue the steady state solutions along the homotopy parameter
-    model.mask["controls"] = True
     parameter = model.controls["homotopy"]
+
+    model.mask["controls"] = True
     model.parameters[parameter]["vary"] = True
 
     Continuer = import_continuer(continuer_name)
@@ -43,8 +44,6 @@ def find_bifurcation_point(
     steady_states = Continuer(
         func=model.rhs_,
         x0=x0,
-        lb=np.zeros_like(x0) if model.non_negative else -np.inf * np.ones_like(x0),
-        ub=np.ones_like(x0) * np.inf,
         p0=model.parameters[parameter]["value"],
         p_min=model.continuation_settings["h_min"],
         p_max=model.continuation_settings["h_max"],
@@ -53,12 +52,12 @@ def find_bifurcation_point(
         local_optimizer=optimizer_name,
     )
 
-    idx = model.compartments.index(model.plot_compartment)
-    for parameter, solutions in zip(steady_states.parameters, steady_states.solutions):
+    idx = model.compartments.index(model.to_plot)
+    for parameter_value, solutions in zip(steady_states.parameters, steady_states.solutions):
         for solution in solutions:
-            plt.plot(parameter, solution[idx], "ok")
+            plt.plot(parameter_value, solution[idx], "ok")
     plt.xlabel(model.controls["homotopy"])
-    plt.ylabel(model.plot_compartment)
+    plt.ylabel(model.to_plot)
     plt.show()
 
     # detect the bifurcation point from the continuation results
@@ -86,35 +85,22 @@ def find_bifurcation_point(
         raise ValueError("Unrecognized bifurcation type!")
 
     model.mask["auxiliary_variables"] = True
-
-    # solve the bifurcation condition
-    if model.non_negative:
-        lb = dict_to_nparray(
-            c={key: 0 for key in c.keys()},
-            p={key: 0 for key in p.keys()},
-            h={key: -np.inf * np.ones_like(values) for key, values in h.items()},
-            model=model,
-        )
-        ub = np.ones_like(x0) * np.inf
-    else:
-        lb, ub = None, None
+    approx = dict_to_nparray(c=c, p=p, h=h, model=model)
 
     Optimizer = import_optimizer(optimizer_name)
 
     Objective = OptimizationProblemGenerator(model, include_singularity=True)
     objective_function = Objective.stack_functions
 
-    Constraints = OptimizationProblemGenerator(model, include_steady_state=True, include_normalization=True)
+    Constraints = OptimizationProblemGenerator(
+        model, include_steady_state=True, include_normalization=True
+    )
     equality_constraints = Constraints.stack_functions
 
-    logger.debug(
-        f"Get the bifurcation point near {p[parameter]} using {optimizer_name} optimizer."
-    )
+    logger.debug(f"Get the bifurcation point near {p[parameter]} using {optimizer_name} optimizer.")
     optimizer = Optimizer(
         objective=objective_function,
-        x0=x0,
-        lb=lb,
-        ub=ub,
+        x0=approx,
         constraints={"type": "eq", "fun": equality_constraints},
     )
 

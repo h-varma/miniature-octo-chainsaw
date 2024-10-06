@@ -2,7 +2,7 @@ import autograd.numpy as np
 from autograd import jacobian
 from scipy import sparse
 import osqp
-from miniature_octo_chainsaw.optimization.multi_experiment.base_optimizer import BaseMultiExperimentOptimizer
+from ...optimization.multi_experiment.base_optimizer import BaseMultiExperimentOptimizer
 
 
 class MultiExperimentOSQP(BaseMultiExperimentOptimizer):

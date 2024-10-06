@@ -2,8 +2,8 @@ import warnings
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
-from miniature_octo_chainsaw.optimization.single_experiment.select_optimizer import import_optimizer
-from miniature_octo_chainsaw.logging_ import logger
+from ..optimization.single_experiment.select_optimizer import import_optimizer
+from ..logging_ import logger
 
 
 def find_steady_state(
@@ -36,10 +36,10 @@ def find_steady_state(
     logger.debug("Integrate the model equations to get a solution estimate.")
     sol = solve_ivp(lambda _, y: model.rhs_(y), y0=y0, t_span=t_span)
 
-    compartment_idx = model.compartments.index(model.plot_compartment)
+    compartment_idx = model.compartments.index(model.to_plot)
     plt.plot(sol.t, sol.y[compartment_idx, :])
     plt.xlabel("time")
-    plt.ylabel(model.plot_compartment)
+    plt.ylabel(model.to_plot)
     plt.show()
 
     logger.debug(f"Model equations were integrated upto time {sol.t[-1]}.")
@@ -47,12 +47,9 @@ def find_steady_state(
 
     # solve the model equations to get the steady state
     x0 = sol.y[:, -1]
-    lb = np.zeros_like(x0) if model.non_negative else np.ones_like(x0) * -np.inf
-    ub = np.ones_like(x0) * np.inf
-
     logger.debug(f"Solve model equations using {optimizer_name} to get steady state.")
     Optimizer = import_optimizer(optimizer_name)
-    optimizer = Optimizer(model.rhs_, x0=x0, lb=lb, ub=ub)
+    optimizer = Optimizer(model.rhs_, x0=x0)
     optimizer.minimize(options=optimizer_options)
 
     if optimizer.result.success:
