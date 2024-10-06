@@ -356,57 +356,20 @@ class DeflatedContinuation(Continuer):
         self.parameters = [p for i, p in enumerate(self.parameters) if i not in idx]
         self.solutions = [s for i, s in enumerate(self.solutions) if i not in idx]
 
-    def detect_saddle_node_bifurcation(self, parameter: str) -> np.ndarray:
+    def detect_bifurcations_on_the_curve(self, parameter: str, type_: str) -> np.ndarray:
         """
-        Detect saddle-node bifurcation branches in the solutions.
+        Detect saddle-node or hopf bifurcation branches in the solutions.
 
         Parameters
         ----------
         parameter : str
             name of bifurcation parameter
+        type_ : str
+            type of bifurcation (saddle-node or hopf)
 
         Returns
         -------
-        np.ndarray : saddle-node bifurcation point
-        """
-
-        branches = [[]]
-        old = self._join_x_matrix_and_p(x=self.solutions[0], p=self.parameters[0])
-        for i in range(1, len(self.solutions)):
-            new = self._join_x_matrix_and_p(x=self.solutions[i], p=self.parameters[i])
-            change_in_solutions = self._size(new) - self._size(old)
-
-            if 1 <= change_in_solutions <= 2:
-                for j in range(new.shape[0]):
-                    if np.isnan(old[j]).any() and not np.isnan(new[j]).any():
-                        branches[-1].append(new[j])
-
-            elif -2 <= change_in_solutions <= -1:
-                for j in range(old.shape[0]):
-                    if np.isnan(new[j]).any() and not np.isnan(old[j]).any():
-                        branches[-1].append(old[j])
-
-            if len(branches[-1]) == 2:
-                branches[-1] = sum(branches[-1]) / 2
-                self.bifurcations_found = True
-                branches.append([])
-
-            old = new
-
-        return self._select_bifurcation_point(branches=branches, parameter=parameter)
-
-    def detect_hopf_bifurcation(self, parameter: str) -> np.ndarray:
-        """
-        Detect Hopf bifurcation points in the solutions.
-
-        Parameters
-        ----------
-        parameter : str
-            name of bifurcation parameter
-
-        Returns
-        -------
-        np.ndarray : Hopf bifurcation point
+        np.ndarray : bifurcation point
         """
         old_eigvals = self._get_eigenvalues(self.solutions[0], self.parameters[0])
         old_signs = np.sign(old_eigvals.real)
@@ -418,8 +381,14 @@ class DeflatedContinuation(Continuer):
 
             if (old_signs != new_signs).any():
                 sign_change = np.abs(old_signs - new_signs) == 2
-                is_complex = np.iscomplex(old_eigvals) | np.iscomplex(new_eigvals)
-                mask = np.any(sign_change & is_complex, axis=1)
+                if type_ == "saddle-node":
+                    is_real = np.isreal(old_eigvals) | np.isreal(new_eigvals)
+                    mask = np.any(sign_change & is_real, axis=1)
+                elif type_ == "hopf":
+                    is_complex = np.iscomplex(old_eigvals) | np.iscomplex(new_eigvals)
+                    mask = np.any(sign_change & is_complex, axis=1)
+                else:
+                    raise ValueError("Unrecognized bifurcation type!")
                 solution = self.solutions[i][mask, :]
                 if len(solution):
                     solution = self._join_x_vector_and_p(solution, self.parameters[i])
