@@ -1,4 +1,4 @@
-import numpy as np
+import autograd.numpy as np
 import pandas as pd
 from itertools import chain
 from ..logging_ import logger
@@ -26,8 +26,8 @@ class DataPreprocessor:
 
     def load_the_data(self, file_path: str):
         """
-        Load the measurement data. 
-        
+        Load the measurement data.
+
         Parameters
         ----------
         file_path : str
@@ -40,7 +40,7 @@ class DataPreprocessor:
         logger.info(f"Loaded data from {file_path}.")
 
     def __add_noise(self):
-        """Add noise to the synthetic measurement data. """
+        """Add noise to the synthetic measurement data."""
         if not isinstance(self._data, pd.DataFrame):
             raise Exception("Data must be a pandas DataFrame.")
         control_1, control_2 = self._data.columns
@@ -58,16 +58,15 @@ class DataPreprocessor:
         logger.info(f"Loaded {len(self._data)} data points with {self._noise * 100}% noise.")
 
     def add_noise_to_the_data(self, scale: float):
-        """Add noise to the measurement data. """
+        """Add noise to the measurement data."""
         self._noise = scale
         self.__add_noise()
 
     def __select_subset(self):
-        """Filter out a subset of the measurement data. """
+        """Filter out a subset of the measurement data."""
         if self._length > len(self._data):
             logger.warning(
-                f"{self._length} data points not available. "
-                f"Using all available data points."
+                f"{self._length} data points not available. " f"Using all available data points."
             )
 
         elif self._length is not None:
@@ -80,11 +79,11 @@ class DataPreprocessor:
                 self._data = [d for i, d in enumerate(self._data) if i in filter_idx]
             else:
                 raise Exception("Data must be a list or pandas DataFrame.")
-            
+
         logger.info(f"Selected {len(self._data)} data points.")
 
     def select_subset_of_data(self, length: int):
-        """Filter out a subset of the measurement data. """
+        """Filter out a subset of the measurement data."""
         self._length = length
         self.__select_subset()
 

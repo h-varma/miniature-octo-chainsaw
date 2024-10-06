@@ -1,5 +1,5 @@
 import warnings
-import numpy as np
+import autograd.numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 from ..optimization.single_experiment.select_optimizer import import_optimizer
@@ -7,10 +7,10 @@ from ..logging_ import logger
 
 
 def find_steady_state(
-        model: object,
-        optimizer_name: str = "gauss-newton",
-        optimizer_options: dict = None,
-        ) -> np.ndarray:
+    model: object,
+    optimizer_name: str = "gauss-newton",
+    optimizer_options: dict = None,
+) -> np.ndarray:
     """
     Integrate and solve the model equations to get a steady state solution.
 

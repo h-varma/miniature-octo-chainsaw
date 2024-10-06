@@ -1,4 +1,4 @@
-import numpy as np
+import autograd.numpy as np
 from dataclasses import dataclass
 
 
@@ -18,7 +18,7 @@ class ProblemSpecifications:
     global_parameters: list[str]
 
     initial_state: np.ndarray
-    integration_interval: list[float]    
+    integration_interval: list[float]
 
     bifurcation_type: str
     continuation_settings: dict[str, float]

@@ -1,5 +1,5 @@
 import yaml
-import numpy as np
+import autograd.numpy as np
 from dataclasses import dataclass
 from ..models.specifications import ProblemSpecifications
 from ..logging_ import logger
