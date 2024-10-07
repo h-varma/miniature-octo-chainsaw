@@ -66,6 +66,7 @@ class DeflatedContinuation(Continuer):
             local_optimizer=local_optimizer,
         )
 
+        self.init_step = p_step
         self.max_failed_attempts = max_failed_attempts
         self.bifurcations_found = False
 
@@ -166,19 +167,28 @@ class DeflatedContinuation(Continuer):
         """
 
         # predictor step
-        sol = self._join_x_vector_and_p(x0, p0)
-        Jx, Jp = self._compute_jacobians(sol)
+        x = None
+        while x is None and self.p_step > 0.01 * self.init_step:
+            sol = self._join_x_vector_and_p(x0, p0)
+            Jx, Jp = self._compute_jacobians(sol)
 
-        step_vector = self._solve_linear_system(Jx, -Jp)
-        x1 = x0 + direction * self.p_step * step_vector
-        p1 = p0 + direction * self.p_step
+            step_vector = self._solve_linear_system(Jx, -Jp)
+            x1 = x0 + direction * self.p_step * step_vector
+            p1 = p0 + direction * self.p_step
 
-        # corrector step
-        def corrector(_x):
-            _sol = self._join_x_vector_and_p(_x, p1)
-            return self.func(_sol)
+            # corrector step
+            def corrector(_x):
+                _sol = self._join_x_vector_and_p(_x, p1)
+                return self.func(_sol)
 
-        x, _ = self._solve_optimization_problem(corrector, x0=x1, lb=self.lb, ub=self.ub)
+            x, n_iters = self._solve_optimization_problem(corrector, x0=x1, lb=self.lb, ub=self.ub)
+
+            if x is None:
+                self.p_step /= 2
+            else:
+                if n_iters < 3 and self.p_step <= self.init_step:
+                    self.p_step *= 2
+
         if x is None:
             return None
 
