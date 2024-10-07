@@ -254,7 +254,7 @@ class MultiExperimentGaussNewton(BaseMultiExperimentOptimizer):
 
         return T_inv
 
-    def compute_covariance_matrix(self) -> np.ndarray:
+    def compute_covariance_matrix(self):
         """
         Compute the covariance matrix at the solution.
 
@@ -275,21 +275,16 @@ class MultiExperimentGaussNewton(BaseMultiExperimentOptimizer):
 
         for i in range(self.n_experiments):
             i_idx = slice(i * self.n_local, (i + 1) * self.n_local)
-            Ri = self.R[i][: self.n_local, : self.n_local]
-            Ri_inv = self._upper_triangular_inverse(Ri)
-            for j in range(i, self.n_experiments):
-                if i == j:
-                    I = np.eye(self.n_local)
-                    X = self.G[i] @ Ug @ self.G[i].T + I
-                    C[i_idx, i_idx] = self.P[i].T @ Ri_inv @ X @ Ri_inv.T @ self.P[i]
-                else:
-                    j_idx = slice(j * self.n_local, (j + 1) * self.n_local)
-                    Rj = self.R[j][: self.n_local, : self.n_local]
-                    Rj_inv = self._upper_triangular_inverse(Rj)
-                    X = self.G[i] @ Ug @ self.G[j].T
-                    C[i_idx, j_idx] = self.P[i].T @ Ri_inv @ X @ Rj_inv.T @ self.P[j]
-
-            C[i_idx, -self.n_global :] = self.P[i].T @ Ri_inv @ self.G[i] @ Ug @ Pg
+            R = self.R[i][: self.n_local, : self.n_local]
+            R1 = self.R[i][: self.n_local_constr, : self.n_local_constr]
+            R2 = self.R[i][: self.n_local_constr, self.n_local_constr :]
+            R3 = self.R[i][self.n_local_constr : self.n_local, self.n_local_constr :]
+            D = np.dot(np.linalg.inv(R1), np.linalg.inv(R1).T)
+            E = -np.dot(np.linalg.inv(R1), R2)
+            F = np.dot(np.linalg.inv(R3), np.linalg.inv(R3).T)
+            A = np.dot(np.linalg.inv(R), self.G[i])
+            U = np.block([[E @ F @ E.T, E @ F], [F @ E.T, F]])
+            C[i_idx, i_idx] = self.P[i].T @ (U + A @ Ug @ A.T) @ self.P[i]
 
         return C
 
