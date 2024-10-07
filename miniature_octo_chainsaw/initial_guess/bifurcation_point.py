@@ -87,7 +87,7 @@ def find_bifurcation_point(
     model.mask["auxiliary_variables"] = True
     approx = dict_to_nparray(c=c, p=p, h=h, model=model)
 
-    Optimizer = import_optimizer(optimizer_name)
+    Optimizer = import_optimizer("scipy")
 
     Objective = OptimizationProblemGenerator(model, include_singularity=True)
     objective_function = Objective.stack_functions
@@ -104,7 +104,7 @@ def find_bifurcation_point(
         constraints={"type": "eq", "fun": equality_constraints},
     )
 
-    optimizer.minimize()
+    optimizer.minimize(method="SLSQP", options={"tol": 1e-8})
 
     if optimizer.result.success:
         solution = optimizer.result.x
