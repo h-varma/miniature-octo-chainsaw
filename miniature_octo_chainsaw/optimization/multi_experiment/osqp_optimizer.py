@@ -97,19 +97,15 @@ class MultiExperimentOSQP(BaseMultiExperimentOptimizer):
         self.lagrange_multipliers = res.y.copy()
         return res.x
 
-    def compute_covariance_matrix(self, x: np.ndarray) -> np.ndarray:
+    def compute_covariance_matrix(self) -> np.ndarray:
         """
         Compute the covariance matrix at the solution.
-
-        Parameters
-        ----------
-        x : np.ndarray
-            solution vector
 
         Returns
         -------
         np.ndarray : covariance matrix
         """
+        x = self.result.x
         self._jacobian_evaluation(x)
 
         n_con = self.j2.shape[0]

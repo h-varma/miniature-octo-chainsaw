@@ -78,8 +78,8 @@ class BaseMultiExperimentOptimizer(BaseOptimizer, ABC):
             self._plot_iterations()
 
         if self.compute_ci:
-            self.result.covariance_matrix = self.compute_covariance_matrix(x)
-            self.result.confidence_intervals = self._compute_confidence_intervals(x)
+            self.result.covariance_matrix = self.compute_covariance_matrix()
+            self.result.confidence_intervals = self.compute_confidence_intervals()
 
     @abstractmethod
     def solve_linearized_system(self) -> np.ndarray:
@@ -93,14 +93,9 @@ class BaseMultiExperimentOptimizer(BaseOptimizer, ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def compute_covariance_matrix(self, x: np.ndarray = None) -> np.ndarray:
+    def compute_covariance_matrix(self) -> np.ndarray:
         """
         Compute the covariance matrix.
-
-        Parameters
-        ----------
-        x : np.ndarray
-            solution vector
 
         Returns
         -------
@@ -108,17 +103,12 @@ class BaseMultiExperimentOptimizer(BaseOptimizer, ABC):
         """
         raise NotImplementedError
 
-    def _compute_confidence_intervals(
-        self, x: np.ndarray, significance: float = 0.05
-    ) -> np.ndarray:
+    def compute_confidence_intervals(self, significance: float = 0.05) -> np.ndarray:
         """
         Compute confidence intervals for solution vector.
 
         Parameters
         ----------
-        x : np.ndarray
-            solution vector
-
         significance : float
             significance level of the confidence intervals
 
@@ -126,10 +116,10 @@ class BaseMultiExperimentOptimizer(BaseOptimizer, ABC):
         -------
         np.ndarray : confidence intervals
         """
-        C = self.compute_covariance_matrix(x)
+        C = self.result.covariance_matrix
         Cii = np.diag(C)
 
-        self._function_evaluation(x)
+        self._function_evaluation(self.result.x)
         n_objective = len(self.f1)
         n_constraints = len(self.f2)
 
