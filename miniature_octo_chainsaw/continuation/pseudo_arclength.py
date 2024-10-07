@@ -11,7 +11,7 @@ class PseudoArclengthContinuation(Continuer):
         func: callable,
         x0: np.ndarray,
         p0: float = np.nan,
-        p_min: float = 0,
+        p_min: float = -np.inf,
         p_max: float = np.inf,
         p_step: float = 1,
         p_step_min: float = 1e-6,
