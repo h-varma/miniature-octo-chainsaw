@@ -54,14 +54,13 @@ def trace_measured_bifurcations(
         func=objective_function,
         x0=x0,
         p0=p0,
-        p_min=model.continuation_settings["h_min"],
-        p_max=2 * max(np.abs(data)),
         p_step=model.continuation_settings["h_step"],
         p_step_min=(max(data) - min(data)) * 1e-8,
         p_step_max=max(np.abs(np.diff(data))),
         p_idx=p_idx,
         fast_iters=3,
         data=data,
+        max_iters=500,
     )
 
     solutions = []
