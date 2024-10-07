@@ -61,9 +61,12 @@ def find_bifurcation_point(
     plt.show()
 
     # detect the bifurcation point from the continuation results
-    approx = steady_states.detect_bifurcations_on_the_curve(
-        parameter=parameter, type_=model.bifurcation_type
-    )
+    if model.bifurcation_type == "hopf":
+        approx = steady_states.detect_hopf_bifurcation(parameter=parameter)
+    elif model.bifurcation_type == "saddle-node":
+        approx = steady_states.detect_saddle_node_bifurcation(parameter=parameter)
+    else:
+        raise ValueError("Unrecognized bifurcation type!")
     c, p, h = nparray_to_dict(x=approx, model=model)
 
     jacobian_ = model.jacobian_(approx)
