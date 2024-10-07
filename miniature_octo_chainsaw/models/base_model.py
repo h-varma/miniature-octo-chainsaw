@@ -11,7 +11,6 @@ class BaseModel(ABC):
 
     def __init__(self):
         self.data = None
-        self.parameters = None
         self.mask = {
             "compartments": False,
             "controls": False,
@@ -50,19 +49,6 @@ class BaseModel(ABC):
         np.ndarray : Jacobian matrix of the model
         """
         raise NotImplementedError
-
-    def _initialize_parameters(self, parameters: dict):
-        """
-        Initialize the parameter dictionary with `value` and `vary` as keys.
-
-        Parameters
-        ----------
-        parameters : dict
-            model parameters
-        """
-        self.parameters = dict()
-        for key, value in parameters.items():
-            self.parameters[key] = {'value': value, 'vary': False}
 
     def generate_parameter_guesses(self):
         """Generates random initial guesses for the variable parameters and controls."""

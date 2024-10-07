@@ -30,7 +30,6 @@ class Model(BaseModel):
         file_path = os.path.dirname(__file__)
         parser = YamlParser(file_path=file_path)
         self.specifications = parser.get_problem_specifications()
-        self._initialize_parameters(parameters=self.true_parameters)
 
     def rhs_(self, x: np.ndarray) -> np.ndarray:
         """
