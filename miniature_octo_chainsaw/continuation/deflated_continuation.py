@@ -388,21 +388,24 @@ class DeflatedContinuation(Continuer):
 
             if 1 <= change_in_solutions <= 2:
                 for j in range(new.shape[0]):
-                    if np.isnan(old[j]).any() and not np.isnan(new[j]).any():
+                    if np.isnan(old[j][:-1]).any() and not np.isnan(new[j][:-1]).any():
                         branches[-1].append(new[j])
 
             elif -2 <= change_in_solutions <= -1:
                 for j in range(old.shape[0]):
-                    if np.isnan(new[j]).any() and not np.isnan(old[j]).any():
+                    if np.isnan(new[j][:-1]).any() and not np.isnan(old[j][:-1]).any():
                         branches[-1].append(old[j])
 
             if len(branches[-1]) == 2:
-                branches[-1] = sum(branches[-1]) / 2
+                branches[-1] = [sum(branches[-1]) / 2]
                 self.bifurcations_found = True
                 branches.append([])
 
             old = new
 
+        branches = [branch[0] for branch in branches if len(branch) > 0]
+        if len(branches):
+            self.bifurcations_found = True
         return self._select_bifurcation_point(branches=branches, parameter=parameter)
 
     def detect_hopf_bifurcation(self, parameter: str) -> np.ndarray:
