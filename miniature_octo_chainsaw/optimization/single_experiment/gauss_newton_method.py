@@ -25,6 +25,7 @@ class GeneralizedGaussNewton:
     x0 : np.ndarray
         initial guess
     """
+
     def __init__(
         self,
         objective: callable,
@@ -103,14 +104,14 @@ class GeneralizedGaussNewton:
     def check_feasibility(self, dy: np.ndarray, sol: dict) -> float:
         """
         Feasibility of the linearization at the current solution measured by constraint violation.
-        
+
         Parameters
         ----------
         dy : np.ndarray
             step direction
         sol : dict
             dictionary containing the current solution
-            
+
         Returns
         -------
         float : constraint violation
@@ -128,12 +129,12 @@ class GeneralizedGaussNewton:
     def get_feasible_point(self, sol: dict) -> np.ndarray:
         """
         Get a feasible solution starting from the initial guess sol.
-        
+
         Parameters
         ----------
         sol : dict
             dictionary containing the current solution
-            
+
         Returns
         -------
         np.ndarray : feasible solution
@@ -307,7 +308,7 @@ class GeneralizedGaussNewton:
         Jc = np.row_stack((j2, j3))
 
         if fc.size:
-            check_constraint_qualification(j=Jc)
+            check_constraint_qualification(Jc)
             Q, R = np.linalg.qr(Jc.T, mode="complete")
             Rbar = R[: R.shape[1], : R.shape[1]]
             dy1 = -np.dot(Rbar.T, fc)
@@ -392,7 +393,7 @@ class GeneralizedGaussNewton:
     def where_negative(x: np.ndarray, tol: float = 1e-6) -> np.ndarray:
         """
         Return indices of x where x is negative.
-        
+
         Parameters
         ----------
         x : np.ndarray
@@ -400,4 +401,4 @@ class GeneralizedGaussNewton:
         tol : float
             precision for negative
         """
-        return np.where(x < -tol)[0]    
+        return np.where(x < -tol)[0]
