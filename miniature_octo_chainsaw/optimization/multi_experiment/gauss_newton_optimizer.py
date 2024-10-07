@@ -8,18 +8,18 @@ from ...logging_ import logger
 
 class MultiExperimentGaussNewton(BaseMultiExperimentOptimizer):
     def __init__(
-            self,
-            x0: np.ndarray,
-            f1_fun: callable,
-            f2_fun: callable,
-            n_local: int,
-            n_global: int,
-            n_observables: int,
-            n_experiments,
-            xtol: float = 1e-4,
-            max_iters: int = 100,
-            plot_iters: bool = False,
-            compute_ci=False
+        self,
+        x0: np.ndarray,
+        f1_fun: callable,
+        f2_fun: callable,
+        n_local: int,
+        n_global: int,
+        n_observables: int,
+        n_experiments,
+        xtol: float = 1e-4,
+        max_iters: int = 100,
+        plot_iters: bool = False,
+        compute_ci=False,
     ):
         """
         Solve multi-experiment non-linear optimization problem using Gauss-Newton method.
@@ -66,8 +66,7 @@ class MultiExperimentGaussNewton(BaseMultiExperimentOptimizer):
         self.compute_ci = compute_ci
 
         assert self.n_global > 0, (
-            "No global parameters found. "
-            "Multi-experiment PE does not make sense in this case!"
+            "No global parameters found. " "Multi-experiment PE does not make sense in this case!"
         )
 
         self.j1_fun = jacobian(self.f1_fun)
@@ -109,7 +108,7 @@ class MultiExperimentGaussNewton(BaseMultiExperimentOptimizer):
 
         Pg = self.P[-1]
         Rg = self.R[-1]
-        f_global = f[-len(self.empty_rows):][:Rg.shape[1]]
+        f_global = f[-len(self.empty_rows) :][: Rg.shape[1]]
         dx_global = scipy.linalg.solve(Rg @ Pg, -f_global)
 
         dx_local = np.zeros((self.n_experiments, self.n_local))
@@ -118,7 +117,7 @@ class MultiExperimentGaussNewton(BaseMultiExperimentOptimizer):
         for i in range(self.n_experiments):
             local_rows = np.where(~np.isclose(np.sum(self.R[i], axis=1), 0))[0]
             idx = slice(k, k + len(local_rows))
-            self.G[i] = J[idx, -self.n_global:]
+            self.G[i] = J[idx, -self.n_global :]
 
             rhs = -(self.G[i] @ dx_global + f[idx])
 
@@ -161,7 +160,9 @@ class MultiExperimentGaussNewton(BaseMultiExperimentOptimizer):
         P = scipy.linalg.block_diag(Pl, Pg)
         return T_inv, P
 
-    def _transform_local_block(self, i: int, J: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def _transform_local_block(
+        self, i: int, J: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Transform a local block of the Jacobian matrix into upper triangular form.
 
@@ -179,16 +180,18 @@ class MultiExperimentGaussNewton(BaseMultiExperimentOptimizer):
         np.ndarray : permutation matrix P
         """
         row_idx = slice(i * self.n_local_rows, (i + 1) * self.n_local_rows)
-        J_local = J[row_idx, i * self.n_local:(i + 1) * self.n_local]
-        f2, f1 = J_local[:self.n_local_constr, :], J_local[self.n_local_constr:, :]
+        J_local = J[row_idx, i * self.n_local : (i + 1) * self.n_local]
+        f2, f1 = J_local[: self.n_local_constr, :], J_local[self.n_local_constr :, :]
 
         _, _, P = self._qr_decomposition(f2, pivoting=True)
         f2_tilde, f1_tilde = f2 @ P.T, f1 @ P.T
 
-        T_, R11, _ = self._qr_decomposition(f2_tilde[:, :self.n_local_constr], pivoting=False)
+        T_, R11, _ = self._qr_decomposition(f2_tilde[:, : self.n_local_constr], pivoting=False)
         R12 = T_.T @ f2_tilde[:, -1:]
-        L = f1_tilde[:, :self.n_local_constr] @ self._upper_triangular_inverse(R11)
-        Q, R31, _ = self._qr_decomposition(f1_tilde[:, self.n_local_constr:] - L @ R12, pivoting=False)
+        L = f1_tilde[:, : self.n_local_constr] @ self._upper_triangular_inverse(R11)
+        Q, R31, _ = self._qr_decomposition(
+            f1_tilde[:, self.n_local_constr :] - L @ R12, pivoting=False
+        )
         O = np.zeros((self.n_observables, self.n_local_constr))
         R = np.block([[R11, R12], [O, R31]])
         T_ = np.block([[T_, O.T], [L, Q]])
@@ -239,12 +242,12 @@ class MultiExperimentGaussNewton(BaseMultiExperimentOptimizer):
         n_non_empty = len(self.non_empty_rows)
         assert n_empty > 0
 
-        J_tilde = J[-n_empty:, -self.n_global:]
+        J_tilde = J[-n_empty:, -self.n_global :]
         _, _, Pg = self._qr_decomposition(J_tilde, pivoting=True)
         self.P.append(Pg)
 
         Tg, Rg, _ = self._qr_decomposition(J_tilde @ Pg.T, pivoting=False)
-        self.R.append(Rg[:Rg.shape[1], :])
+        self.R.append(Rg[: Rg.shape[1], :])
 
         T_ = scipy.linalg.block_diag(np.eye(n_non_empty), Tg)
         T_inv = np.linalg.inv(T_)
@@ -268,11 +271,11 @@ class MultiExperimentGaussNewton(BaseMultiExperimentOptimizer):
         Rg = self.R[-1]
         Rg_inv = self._upper_triangular_inverse(Rg)
         Ug = Rg_inv @ Rg_inv.T
-        C[-self.n_global:, -self.n_global:] = Pg.T @ Ug @ Pg
+        C[-self.n_global :, -self.n_global :] = Pg.T @ Ug @ Pg
 
         for i in range(self.n_experiments):
             i_idx = slice(i * self.n_local, (i + 1) * self.n_local)
-            Ri = self.R[i][:self.n_local, :self.n_local]
+            Ri = self.R[i][: self.n_local, : self.n_local]
             Ri_inv = self._upper_triangular_inverse(Ri)
             for j in range(i, self.n_experiments):
                 if i == j:
@@ -281,12 +284,12 @@ class MultiExperimentGaussNewton(BaseMultiExperimentOptimizer):
                     C[i_idx, i_idx] = self.P[i].T @ Ri_inv @ X @ Ri_inv.T @ self.P[i]
                 else:
                     j_idx = slice(j * self.n_local, (j + 1) * self.n_local)
-                    Rj = self.R[j][:self.n_local, :self.n_local]
+                    Rj = self.R[j][: self.n_local, : self.n_local]
                     Rj_inv = self._upper_triangular_inverse(Rj)
                     X = self.G[i] @ Ug @ self.G[j].T
                     C[i_idx, j_idx] = self.P[i].T @ Ri_inv @ X @ Rj_inv.T @ self.P[j]
 
-            C[i_idx, -self.n_global:] = self.P[i].T @ Ri_inv @ self.G[i] @ Ug @ Pg
+            C[i_idx, -self.n_global :] = self.P[i].T @ Ri_inv @ self.G[i] @ Ug @ Pg
 
         return C
 
@@ -307,7 +310,9 @@ class MultiExperimentGaussNewton(BaseMultiExperimentOptimizer):
         return scipy.linalg.lapack.dtrtri(x, lower=0)[0]
 
     @staticmethod
-    def _qr_decomposition(X: np.ndarray, pivoting: bool) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def _qr_decomposition(
+        X: np.ndarray, pivoting: bool
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Compute the QR decomposition of a matrix.
 

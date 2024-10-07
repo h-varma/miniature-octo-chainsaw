@@ -7,18 +7,18 @@ from ...optimization.multi_experiment.base_optimizer import BaseMultiExperimentO
 
 class MultiExperimentOSQP(BaseMultiExperimentOptimizer):
     def __init__(
-            self,
-            x0: np.ndarray,
-            f1_fun: callable,
-            f2_fun: callable,
-            n_local: int,
-            n_global: int,
-            n_observables: int,
-            n_experiments: int,
-            xtol: float = 1e-4,
-            max_iters: int = 100,
-            plot_iters: bool = False,
-            compute_ci: bool = False,
+        self,
+        x0: np.ndarray,
+        f1_fun: callable,
+        f2_fun: callable,
+        n_local: int,
+        n_global: int,
+        n_observables: int,
+        n_experiments: int,
+        xtol: float = 1e-4,
+        max_iters: int = 100,
+        plot_iters: bool = False,
+        compute_ci: bool = False,
     ):
         """
         Solve multi-experiment non-linear optimization problem using OSQP.
@@ -66,8 +66,7 @@ class MultiExperimentOSQP(BaseMultiExperimentOptimizer):
         self.compute_ci = compute_ci
 
         assert self.n_global > 0, (
-            "No global parameters found. "
-            "Multi-experiment PE does not make sense in this case!"
+            "No global parameters found. " "Multi-experiment PE does not make sense in this case!"
         )
 
         self.j1_fun = jacobian(self.f1_fun)
