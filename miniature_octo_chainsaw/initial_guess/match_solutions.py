@@ -18,6 +18,8 @@ def match_solutions_to_data(model: object, solutions: list) -> np.ndarray:
     np.ndarray : initial guess
     np.ndarray : boolean array to mask unused data points
     """
+    if len(solutions) == 0:
+        raise RuntimeError("No solutions found in the two-parameter continuation!")
 
     h_param = model.controls["homotopy"]
     f_param = model.controls["free"]
