@@ -1,7 +1,7 @@
 import autograd.numpy as np
 
 
-def check_positive_definiteness(J: np.ndarray) -> bool:
+def check_positive_definiteness(J: np.ndarray, tol: float = 1e-6) -> bool:
     """
     Check if the matrix has full column rank.
 
@@ -9,15 +9,17 @@ def check_positive_definiteness(J: np.ndarray) -> bool:
     ----------
     J : np.ndarray
         matrix to check
+    tol : float
+        singular value tolerance
 
     Returns
     -------
     bool : True if the matrix has full column rank
     """
-    return np.linalg.matrix_rank(J) == J.shape[1]
+    return np.linalg.matrix_rank(J, tol=tol) == J.shape[1]
 
 
-def check_constraint_qualification(J: np.ndarray) -> bool:
+def check_constraint_qualification(J: np.ndarray, tol: float = 1e-8) -> bool:
     """
     Check if the matrix has full row rank.
 
@@ -25,12 +27,14 @@ def check_constraint_qualification(J: np.ndarray) -> bool:
     ----------
     J : np.ndarray
         matrix to check
+    tol : float
+        singular value tolerance
 
     Returns
     -------
     bool : True if the matrix has full row rank
     """
     if len(J):
-        if np.linalg.matrix_rank(J) != J.shape[0] and len(J.shape) > 1:
+        if np.linalg.matrix_rank(J, tol=tol) != J.shape[0] and len(J.shape) > 1:
             raise Exception("CQ failed!")
     return True
