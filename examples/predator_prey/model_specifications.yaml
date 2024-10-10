@@ -1,0 +1,72 @@
+model_name: 'predator_prey'
+
+# model compartments - make sure that the order matches the order of model equations
+
+compartment_1:
+  name: 'N'
+  value: 6
+  description: 'Nitrogen concentration'
+
+compartment_2:
+  name: 'C'
+  value: 5
+  description: 'Concentration of prey'
+
+compartment_3:
+  name: 'R'
+  value: 1
+  description: 'Concentration of reproducing predator'
+
+compartment_4:
+  name: 'B'
+  value: 4
+  description: 'Total concentration of predator'
+
+to_plot: 'N'
+
+# model parameters and controls
+
+parameter_1:
+  name: 'delta'
+  true_value: 0.05
+  description: 'Dilution rate'
+
+parameter_2:
+  name: 'Ni'
+  true_value: 160
+  description: 'Nitrogen inflow'
+
+parameter_3:
+  name: 'Bc'
+  true_value: 3.3
+  description: 'Maximum growth rate of prey'
+
+parameter_4:
+  name: 'Kc'
+  true_value: 4.3
+  description: 'Half-saturation constant of prey'
+
+parameter_5:
+  name: 'Bb'
+  true_value: 2.25
+  description: 'Maximum growth rate of predator'
+
+parameter_6:
+  name: 'Kb'
+  true_value: 15
+  description: 'Half-saturation constant of predator'
+
+parameter_7:
+  name: 'epsilon'
+  true_value: 0.25
+  description: 'Efficiency of predator assimilation'
+
+parameter_8:
+  name: 'm'
+  true_value: 0.055
+  description: 'Predator mortality rate'
+
+parameter_9:
+  name: 'lambda'
+  true_value: 0.4
+  description: 'Decay of predator reproduction'

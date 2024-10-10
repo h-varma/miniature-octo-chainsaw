@@ -1,4 +1,4 @@
-model_name: 'peroxidase_oxidase'
+model_name: 'predator_prey'
 
 # noise generator
 
@@ -12,31 +12,31 @@ parameter_noise:
 
 # IVP solver
 
-t_end: 100
+t_end: 50
 
 # one-parameter bifurcation diagram
 
 bifurcation:
-  type: 'saddle-node'
+  type: 'hopf'
 
 control_1:
-  name: 'k4'
-  min_value: 0.05
-  max_value: 10
-  step_size: 0.05
+  name: 'Ni'
+  min_value: 10
+  max_value: 1000
+  step_size: 20
   description: 'homotopy parameter'
 
 # two-parameter bifurcation diagram
 
 control_2:
-  name: 'k5'
+  name: 'delta'
   description: 'free parameter'
 
 # parameter estimation problem
 
 global_parameters:
-  - 'k1'
-  - 'k2'
+  - 'Bc'
+  - 'Bb'
 
 residual:
   scale: 'linear'

@@ -1,5 +1,6 @@
+import os
 import autograd.numpy as np
-from problem_specifications import ProblemSpecs
+from miniature_octo_chainsaw.parser.yaml_parser import YamlParser
 from miniature_octo_chainsaw.models.utils import nparray_to_dict
 from miniature_octo_chainsaw.models.base_model import BaseModel
 
@@ -26,8 +27,9 @@ class Model(BaseModel):
 
     def __init__(self):
         super().__init__()
-        self.specifications = ProblemSpecs()
-        self._initialize_parameters(parameters=self.true_parameters)
+        file_path = os.path.dirname(__file__)
+        parser = YamlParser(file_path=file_path)
+        self.specifications = parser.get_problem_specifications()
 
     def rhs_(self, x: np.ndarray) -> np.ndarray:
         """
@@ -45,15 +47,13 @@ class Model(BaseModel):
 
         c, p, _ = nparray_to_dict(x=x, model=self)
         model_equations = {
-            "N": p["delta"] * (p["Ni"] - c["N"])
-            - p["Bc"] * c["N"] * c["C"] / (p["Kc"] + c["N"]),
+            "N": p["delta"] * (p["Ni"] - c["N"]) - p["Bc"] * c["N"] * c["C"] / (p["Kc"] + c["N"]),
             "C": p["Bc"] * c["N"] * c["C"] / (p["Kc"] + c["N"])
             - p["Bb"] * c["C"] * c["B"] / (p["epsilon"] * (p["Kb"] + c["C"]))
             - p["delta"] * c["C"],
             "R": p["Bb"] * c["C"] * c["R"] / (p["Kb"] + c["C"])
             - (p["delta"] + p["m"] + p["lambda"]) * c["R"],
-            "B": p["Bb"] * c["C"] * c["R"] / (p["Kb"] + c["C"])
-            - (p["delta"] + p["m"]) * c["B"],
+            "B": p["Bb"] * c["C"] * c["R"] / (p["Kb"] + c["C"]) - (p["delta"] + p["m"]) * c["B"],
         }
 
         M_list = [model_equations[key] for key in self.compartments]
@@ -77,8 +77,7 @@ class Model(BaseModel):
         model_jacobian = {
             "N": np.array(
                 [
-                    -p["delta"]
-                    - (p["Bc"] * p["Kc"] * c["C"]) / ((p["Kc"] + c["N"]) ** 2),
+                    -p["delta"] - (p["Bc"] * p["Kc"] * c["C"]) / ((p["Kc"] + c["N"]) ** 2),
                     -p["Bc"] * c["N"] / (p["Kc"] + c["N"]),
                     0,
                     0,
@@ -88,8 +87,7 @@ class Model(BaseModel):
                 [
                     (p["Bc"] * p["Kc"] * c["C"]) / ((p["Kc"] + c["N"]) ** 2),
                     p["Bc"] * c["N"] / (p["Kc"] + c["N"])
-                    - (p["Bb"] * p["Kb"] * c["B"])
-                    / (p["epsilon"] * ((p["Kb"] + c["C"]) ** 2))
+                    - (p["Bb"] * p["Kb"] * c["B"]) / (p["epsilon"] * ((p["Kb"] + c["C"]) ** 2))
                     - p["delta"],
                     0,
                     -p["Bb"] * c["C"] / (p["epsilon"] * (p["Kb"] + c["C"])),
@@ -99,8 +97,7 @@ class Model(BaseModel):
                 [
                     0,
                     p["Bb"] * p["Kb"] * c["R"] / ((p["Kb"] + c["C"]) ** 2),
-                    p["Bb"] * c["C"] / (p["Kb"] + c["C"])
-                    - (p["delta"] + p["m"] + p["lambda"]),
+                    p["Bb"] * c["C"] / (p["Kb"] + c["C"]) - (p["delta"] + p["m"] + p["lambda"]),
                     0,
                 ]
             ),
