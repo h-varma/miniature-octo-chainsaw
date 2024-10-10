@@ -286,19 +286,22 @@ class DeflatedContinuation(Continuer):
         Sort steady states at a parameter value to continuously follow
         steady states from the previous parameter value.
         """
+        max_size = max([len(sol) for sol in self.solutions])
         self.solutions[0] = np.row_stack(self.solutions[0])
-        max_size = self.solutions[0].shape[0]
 
         for i in range(1, len(self.solutions)):
             self.solutions[i] = np.row_stack(self.solutions[i])
-            dist_ = cdist(self.solutions[i], self.solutions[i - 1])
+            dist_ = cdist(self.solutions[i], self.solutions[i - 1], "minkowski", p=1)
 
             previous_size = self.solutions[i - 1].shape[0]
             current_size = self.solutions[i].shape[0]
-            if current_size > max_size:
-                max_size = current_size
 
             for _ in range(previous_size):
+                for j in range(min(dist_.shape)):
+                    if np.isnan(dist_[j, j]):
+                        dist_[j, :] = np.nan
+                        dist_[:, j] = np.nan
+
                 if np.all(np.isnan(dist_)):
                     break
                 row, col = np.argwhere(dist_ == np.nanmin(dist_))[0]
@@ -312,14 +315,16 @@ class DeflatedContinuation(Continuer):
                         self.solutions[0] = self._insert_nan_rows(self.solutions[0], row)
 
                 elif current_size < previous_size and row != col:
-                    self.solutions[i] = self._insert_nan_rows(self.solutions[i], row)
-                    dist_ = self._insert_nan_rows(dist_, row)
+                    self.solutions[i] = self._insert_nan_rows(self.solutions[i], col)
+                    dist_ = self._insert_nan_rows(dist_, col)
 
         for i in range(len(self.solutions)):
             if self.solutions[i].shape[0] < max_size:
                 idx = np.arange(self.solutions[i].shape[0], max_size)
                 for j in idx:
                     self.solutions[i] = self._insert_nan_rows(self.solutions[i], j)
+
+        assert all([sol.shape[0] == max_size for sol in self.solutions])
 
     @staticmethod
     def _insert_nan_rows(x: np.ndarray, idx: Union[int, list, slice]) -> np.ndarray:
