@@ -1,16 +1,11 @@
-import warnings
 import autograd.numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
-from ..optimization.single_experiment.select_optimizer import import_optimizer
+from scipy.optimize import root
 from ..logging_ import logger
 
 
-def find_steady_state(
-    model: object,
-    optimizer_name: str = "gauss-newton",
-    optimizer_options: dict = None,
-) -> np.ndarray:
+def find_steady_state(model: object) -> np.ndarray:
     """
     Integrate and solve the model equations to get a steady state solution.
 
@@ -18,10 +13,6 @@ def find_steady_state(
     ----------
     model : object
         instance of the Model object
-    optimizer_method : str
-        name of the local optimizer
-    optimizer_options : dict
-        optimizer-specific options
 
     Returns
     -------
@@ -47,17 +38,11 @@ def find_steady_state(
 
     # solve the model equations to get the steady state
     x0 = sol.y[:, -1]
-    logger.debug(f"Solve model equations using {optimizer_name} to get steady state.")
-    Optimizer = import_optimizer(optimizer_name)
-    optimizer = Optimizer(model.rhs_, x0=x0)
-    optimizer.minimize(options=optimizer_options)
+    logger.debug(f"Solve model equations using scipy.optimize.root to get steady state.")
+    res = root(model.rhs_, x0=x0)
 
-    if optimizer.result.success:
-        solution = optimizer.result.x
-        max_rhs = np.linalg.norm(model.rhs_(solution), ord=np.inf)
-        if not np.isclose(max_rhs, 0):
-            warnings.warn(f"RHS is satisfied only upto {max_rhs:.3e}", RuntimeWarning)
-
+    if res.success:
+        solution = res.x
         solution_dict = {c: solution[i] for i, c in enumerate(model.compartments)}
         logger.debug(f"Steady state found: {solution_dict}")
 

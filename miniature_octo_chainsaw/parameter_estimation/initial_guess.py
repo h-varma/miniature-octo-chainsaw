@@ -21,7 +21,7 @@ class InitialGuessGenerator:
 
         # Step 1: Get a steady state solution
         logger.info("Step 1: Find a steady state solution.")
-        self.steady_state = find_steady_state(model=self.model, optimizer_name="scipy")
+        self.steady_state = find_steady_state(model=self.model)
 
         # Step 2: Draw a bifurcation diagram and select a bifurcation point for continuation
         logger.info("Step 2: Continue the steady state to draw a bifurcation diagram.")
