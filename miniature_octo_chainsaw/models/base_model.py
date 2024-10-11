@@ -50,19 +50,29 @@ class BaseModel(ABC):
         """
         raise NotImplementedError
 
-    def generate_parameter_guesses(self):
-        """Generates random initial guesses for the variable parameters and controls."""
+    def generate_parameter_guesses(self, truncated: bool = True):
+        """
+        Generates random initial guesses for the variable parameters and controls.
+
+        Parameters
+        ----------
+        truncated : bool
+            whether to generate truncated normal random variables
+        """
         parameter_names = self.global_parameters + list(self.controls.values())
 
         for parameter_name, parameter_value in self.true_parameters.items():
             if parameter_name in parameter_names:
                 loc = parameter_value
-                scale = parameter_value * self.parameter_noise
-                a = (0 - loc) / scale
-                b = (np.inf - loc) / scale
-                # compute truncated normal random variable
-                # truncated at a and b standard deviations from loc
-                parameter_value = truncnorm.rvs(a=a, b=b, loc=loc, scale=scale)
+                scale = np.abs(parameter_value * self.parameter_noise)
+                if truncated:
+                    a = (0 - loc) / scale
+                    b = (np.inf - loc) / scale
+                    # compute truncated normal random variable
+                    # truncated at a and b standard deviations from loc
+                    parameter_value = truncnorm.rvs(a=a, b=b, loc=loc, scale=scale)
+                else:
+                    parameter_value = np.random.normal(loc=loc, scale=scale)
                 parameter_value = float(parameter_value)
             self.parameters[parameter_name] = {"value": parameter_value, "vary": False}
 
