@@ -291,17 +291,12 @@ class DeflatedContinuation(Continuer):
 
         for i in range(1, len(self.solutions)):
             self.solutions[i] = np.row_stack(self.solutions[i])
-            dist_ = cdist(self.solutions[i], self.solutions[i - 1], "minkowski", p=1)
+            dist_ = cdist(self.solutions[i], self.solutions[i - 1])
 
             previous_size = self.solutions[i - 1].shape[0]
             current_size = self.solutions[i].shape[0]
 
             for _ in range(previous_size):
-                for j in range(min(dist_.shape)):
-                    if np.isnan(dist_[j, j]):
-                        dist_[j, :] = np.nan
-                        dist_[:, j] = np.nan
-
                 if np.all(np.isnan(dist_)):
                     break
                 row, col = np.argwhere(dist_ == np.nanmin(dist_))[0]
@@ -317,6 +312,7 @@ class DeflatedContinuation(Continuer):
                 elif current_size < previous_size and row != col:
                     self.solutions[i] = self._insert_nan_rows(self.solutions[i], col)
                     dist_ = self._insert_nan_rows(dist_, col)
+                    current_size += 1
 
         for i in range(len(self.solutions)):
             if self.solutions[i].shape[0] < max_size:
