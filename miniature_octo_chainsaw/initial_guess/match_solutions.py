@@ -16,7 +16,6 @@ def match_solutions_to_data(model: object, solutions: list) -> np.ndarray:
     Returns
     -------
     np.ndarray : initial guess
-    np.ndarray : boolean array to mask unused data points
     """
     if len(solutions) == 0:
         raise RuntimeError("No solutions found in the two-parameter continuation!")
@@ -32,41 +31,52 @@ def match_solutions_to_data(model: object, solutions: list) -> np.ndarray:
     f_data = np.array([d[f_param] for d in model.data])
 
     initial_guess = []
-    mask = np.ones(len(model.data))
+    data = []
 
-    for h_value in np.unique(h_data):
+    unique_h_data, unique_idx = np.unique(h_data, return_index=True)
+    for h_value in unique_h_data[unique_idx]:
         where_h = np.where(np.isclose(h_params, h_value))[0]
         count_h = len(where_h)
 
         if count_h == 2:
+            # predicted two bifurcation points with the same homotopy parameter value
             matching_f = f_data[np.isclose(h_data, h_value)]
+            f_values = np.array(f_params)[where_h]
             if len(matching_f) == 2:
-                for idx in where_h:
+                # experimental data has two bifurcation points with different free parameter values
+                for i in range(2):
+                    f_closest = min(f_values, key=lambda x: abs(x - matching_f[i]))
+                    idx = f_params.index(f_closest)
                     initial_guess.append(solutions[idx])
+                    data.append({h_param: h_value, f_param: matching_f[i]})
             elif len(matching_f) == 1:
-                f_values = np.array(f_params)[where_h]
+                # experimental data has only one corresponding bifurcation point
                 f_closest = min(f_values, key=lambda x: abs(x - matching_f))
                 idx = f_params.index(f_closest)
                 initial_guess.append(solutions[idx])
+                data.append({h_param: h_value, f_param: matching_f[0]})
 
         elif count_h == 1:
+            # predicted one bifurcation point with the homotopy parameter value
             where_h = where_h[0]
-            if len([h for h in h_data if h == h_value]) == 2:
-                _f_data = f_data[np.isclose(h_data, h_value)]
-                f = max(_f_data, key=lambda x: abs(x - f_params[where_h]))
-                mask[np.isclose(h_data, h_value) & np.isclose(f_data, f)] = 0
+            _f_data = f_data[np.isclose(h_data, h_value)]
+            if len(_f_data) == 2:
+                # but experimental data has two corresponding bifurcation points
+                f_value = min(_f_data, key=lambda x: abs(x - f_params[where_h]))
+            else:
+                # and experimental data has one corresponding bifurcation point
+                f_value = _f_data[0]
             initial_guess.append(solutions[where_h])
+            data.append({h_param: h_value, f_param: f_value})
 
-        elif count_h == 0:
-            mask[np.isclose(h_data, h_value)] = 0
+    assert len(initial_guess) > 0
+    assert len(initial_guess) == len(data)
+    h_params = list(map(lambda x: get_parameter_value(x, type_="h", model=model), initial_guess))
+    h_data = [d[h_param] for d in data]
+    assert all([np.isclose(hp, hd) for hp, hd in zip(h_params, h_data)])
 
-    # sort the initial guesses and experimental data so that they match
-    initial_guess.sort(key=lambda x: get_parameter_value(x, type_="h", model=model))
-    iterable_ = zip(model.data, mask)
-    iterable_ = sorted(iterable_, key=lambda x: x[0][h_param])
-
-    model.data, mask = (list(x) for x in zip(*iterable_))
-    return np.hstack(initial_guess), mask
+    model.data = data
+    return np.hstack(initial_guess)
 
 
 def get_parameter_value(x: np.ndarray, type_: str, model: object) -> float:

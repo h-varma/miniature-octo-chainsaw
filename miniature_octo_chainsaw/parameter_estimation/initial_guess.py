@@ -35,7 +35,7 @@ class InitialGuessGenerator:
 
         # Step 4: Set up the initial guesses
         logger.info("Step 5: Match the predicted points to experimental data.")
-        self.initial_guesses, self.mask = match_solutions_to_data(
+        self.initial_guesses = match_solutions_to_data(
             model=self.model, solutions=self.bifurcation_points
         )
 

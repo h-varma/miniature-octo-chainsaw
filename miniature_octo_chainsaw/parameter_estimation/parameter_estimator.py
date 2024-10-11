@@ -10,17 +10,15 @@ from ..logging_ import logger
 
 class ParameterEstimator:
     def __init__(
-            self,
-            x0: np.ndarray,
-            mask: np.ndarray,
-            model: object,
-            n_experiments: int,
-            method: str = "osqp",
-            xtol: float = 1e-4,
-            max_iters: int = 100,
-            plot_iters: bool = False,
-            compute_ci: bool = False,
-            timer: bool = False,
+        self,
+        x0: np.ndarray,
+        model: object,
+        method: str = "osqp",
+        xtol: float = 1e-4,
+        max_iters: int = 100,
+        plot_iters: bool = False,
+        compute_ci: bool = False,
+        timer: bool = False,
     ):
         """
         Solve the multi-experiment parameter estimation problem.
@@ -29,12 +27,8 @@ class ParameterEstimator:
         ----------
         x0 : np.ndarray
             initial guess
-        mask : np.ndarray
-            mask for the data
         model : object
             details of the model
-        n_experiments : int
-            number of experiments
         method : str
             approach to solve the problem
         xtol : float
@@ -49,14 +43,13 @@ class ParameterEstimator:
             whether to time the solver
         """
         self.x0 = x0
-        self.mask = mask
         self.model = model
-        self.n_experiments = n_experiments
         self.xtol = xtol
         self.max_iters = max_iters
         self.plot_iters = plot_iters
         self.compute_ci = compute_ci
 
+        self.n_experiments = len(model.data)
         self.n_observables = len(model.controls)
         self.n_global = len(model.global_parameters)
         self.n_local = len(model.compartments) + len(model.controls)
@@ -180,9 +173,9 @@ class ParameterEstimator:
         np.ndarray : residuals
         """
         obj_fun = np.array([])
-        global_x = x[-self.n_global:]
-        for i, data in enumerate(list(compress(self.model.data, self.mask))):
-            local_x = x[i * self.n_local: (i + 1) * self.n_local]
+        global_x = x[-self.n_global :]
+        for i, data in enumerate(self.model.data):
+            local_x = x[i * self.n_local : (i + 1) * self.n_local]
             solution = np.concatenate((local_x, global_x))
             _, p, _ = nparray_to_dict(solution, model=self.model)
 

@@ -33,9 +33,7 @@ def main():
     # Solve parameter estimation problem
     fit = ParameterEstimator(
         x0=initializer.initial_guesses,
-        mask=initializer.mask,
         model=model,
-        n_experiments=int(sum(initializer.mask)),
         method="gauss-newton",
         plot_iters=True,
         compute_ci=False,
