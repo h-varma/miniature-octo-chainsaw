@@ -1,0 +1,39 @@
+model_name: 'neuron'
+
+# model compartments - make sure that the order matches the order of model equations
+
+compartment_1:
+  name: 'x'
+  value: 0
+
+compartment_2:
+  name: 'y'
+  value: 0
+
+compartment_3:
+  name: 'z'
+  value: 0
+
+to_plot: 'x'
+
+# model parameters and controls
+
+parameter_1:
+  name: 'b'
+  true_value: 3.3
+
+parameter_2:
+  name: 'I'
+  true_value: 5
+
+parameter_3:
+  name: 'mu'
+  true_value: 0.01
+
+parameter_4:
+  name: 's'
+  true_value: 4
+
+parameter_5:
+  name: 'x_rest'
+  true_value: -1.6

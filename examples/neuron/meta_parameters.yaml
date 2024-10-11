@@ -1,0 +1,42 @@
+model_name: 'neuron'
+
+# noise generator
+
+data_noise:
+  scale: 0.05
+  description: 'how much noise to add to the data - (scale x 100)%'
+
+parameter_noise:
+  scale: 1
+  description: 'how much noise to add to the parameters - (scale x 100)%'
+
+# IVP solver
+
+t_end: 1000
+
+# one-parameter bifurcation diagram
+
+bifurcation:
+  type: 'hopf'
+
+control_1:
+  name: 'b'
+  min_value: -10
+  max_value: 10
+  step_size: 0.05
+  description: 'homotopy parameter'
+
+# two-parameter bifurcation diagram
+
+control_2:
+  name: 'I'
+  description: 'free parameter'
+
+# parameter estimation problem
+
+global_parameters:
+  - 'x_rest'
+
+residual:
+  scale: 'linear'
+  type: 'absolute'
