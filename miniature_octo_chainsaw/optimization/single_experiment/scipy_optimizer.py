@@ -84,8 +84,7 @@ class ScipyOptimizer(BaseOptimizer):
         else:
             if (
                 self.constraints is not None
-                or bool(not isinstance(self.objective(self.x0), float))
-                != self.is_least_squares
+                or bool(not isinstance(self.objective(self.x0), float)) != self.is_least_squares
             ):
                 objective = lambda x: np.linalg.norm(self.objective(x)) ** 2
             else:

@@ -118,7 +118,9 @@ def dict_to_nparray(
     return x
 
 
-def assign_auxiliary_variables(x: Union[np.ndarray, dict], model: object, idx: int = 0) -> Union[np.ndarray, dict]:
+def assign_auxiliary_variables(
+    x: Union[np.ndarray, dict], model: object, idx: int = 0
+) -> Union[np.ndarray, dict]:
     if isinstance(x, dict):
         y = np.array([])
         if model.bifurcation_type == "hopf":
