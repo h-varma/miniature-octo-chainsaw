@@ -306,7 +306,7 @@ class DeflatedContinuation(Continuer):
                 if current_size >= previous_size and row != col:
                     self.solutions[i][[row, col]] = self.solutions[i][[col, row]]
                     dist_[[row, col]] = dist_[[col, row]]
-                    if i == 1:
+                    if i == 1 and current_size > previous_size:
                         self.solutions[0] = self._insert_nan_rows(self.solutions[0], row)
 
                 elif current_size < previous_size and row != col:
