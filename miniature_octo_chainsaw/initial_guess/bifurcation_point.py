@@ -5,15 +5,17 @@ from ..continuation.select_continuer import import_continuer
 from ..optimization.single_experiment.select_optimizer import import_optimizer
 from ..parameter_estimation.problem_generator import OptimizationProblemGenerator
 from ..models.utils import dict_to_nparray, nparray_to_dict
+from ..postprocessing.plot_decorator import handle_plots
 from ..logging_ import logger
 
 
+@handle_plots(plot_name="steady_state_curve")
 def find_bifurcation_point(
     x0: np.ndarray,
     model: dataclass,
     continuer_name: str = "deflated",
     optimizer_name: str = "scipy",
-) -> object:
+) -> tuple[object, plt.Figure]:
     """
     Find a bifurcation point starting from the steady state x0.
 
@@ -31,6 +33,7 @@ def find_bifurcation_point(
     Returns
     -------
     object : results of the continuation
+    matplotlib.figure.Figure : figure object
     """
 
     # continue the steady state solutions along the homotopy parameter
@@ -53,12 +56,12 @@ def find_bifurcation_point(
     )
 
     idx = model.compartments.index(model.to_plot)
+    fig, ax = plt.subplots()
     for parameter_value, solutions in zip(steady_states.parameters, steady_states.solutions):
         for solution in solutions:
-            plt.plot(parameter_value, solution[idx], "ok")
-    plt.xlabel(model.controls["homotopy"])
-    plt.ylabel(model.to_plot)
-    plt.show()
+            ax.plot(parameter_value, solution[idx], "ok")
+    ax.set_xlabel(model.controls["homotopy"])
+    ax.set_ylabel(model.to_plot)
 
     # detect the bifurcation point from the continuation results
     if model.bifurcation_type == "hopf":
@@ -113,6 +116,6 @@ def find_bifurcation_point(
             logger.warning(f"Objective function is satisfied only upto {max_obj:.3e}")
         _, p, _ = nparray_to_dict(x=solution, model=model)
         logger.info(f"Found a bifurcation point at {p[parameter]}.")
-        return solution
+        return solution, fig
     else:
         raise RuntimeError("Could not find a bifurcation point!")

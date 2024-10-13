@@ -9,7 +9,9 @@ from miniature_octo_chainsaw.logging_ import logger
 from miniature_octo_chainsaw.preprocessing.preprocess_data import DataPreprocessor
 from miniature_octo_chainsaw.parameter_estimation.initial_guess import InitialGuessGenerator
 from miniature_octo_chainsaw.parameter_estimation.parameter_estimator import ParameterEstimator
-from miniature_octo_chainsaw.parameter_estimation.results import save_results_as_pickle
+from miniature_octo_chainsaw.postprocessing.pickler import create_folder_for_results
+from miniature_octo_chainsaw.postprocessing.pickler import save_results_as_pickle
+import miniature_octo_chainsaw.postprocessing.plot_decorator as plot_decorator
 
 
 def main():
@@ -27,6 +29,11 @@ def main():
     data_preprocessor.select_subset_of_data(length=25)
     model.data = data_preprocessor.data
 
+    # Create a folder for storing the results
+    results_path = create_folder_for_results(path=file_path)
+    plot_decorator.save_plots = False
+    plot_decorator.show_plots = True
+
     # Generate initial guesses for the parameter estimation
     initializer = InitialGuessGenerator(model=model)
 
@@ -34,7 +41,7 @@ def main():
     fit = ParameterEstimator(
         x0=initializer.initial_guesses,
         model=model,
-        method="gauss-newton",
+        method="osqp",
         plot_iters=True,
         compute_ci=False,
         timer=False,

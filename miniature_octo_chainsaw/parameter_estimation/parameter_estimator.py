@@ -1,10 +1,10 @@
 import autograd.numpy as np
-from itertools import compress
 import matplotlib.pyplot as plt
 from ..utils.timer import timing_decorator
 from ..models.utils import nparray_to_dict
 from ..parameter_estimation.problem_generator import OptimizationProblemGenerator
 from ..optimization.multi_experiment.select_optimizer import import_optimizer
+from ..postprocessing.plot_decorator import handle_plots
 from ..logging_ import logger
 
 
@@ -119,6 +119,7 @@ class ParameterEstimator:
             parameters[key] = x[-self.n_global + i]
         return parameters
 
+    @handle_plots(plot_name="fitting_results")
     def __plot_results(self):
         """
         Plot the results of the parameter estimation.
@@ -132,17 +133,18 @@ class ParameterEstimator:
         solutions = self.solver.split_into_experiments(self.result.x)
         initial_guesses = self.solver.split_into_experiments(self.x0)
 
-        plt.plot(h_data, f_data, "X", color="black")
+        fig, ax = plt.subplots()
+        ax.plot(h_data, f_data, "X", color="black")
         for i in range(self.n_experiments):
             _, p0, _ = nparray_to_dict(initial_guesses[i], model=self.model)
-            plt.plot(p0[h_param], p0[f_param], "o", color="red", alpha=0.2)
+            ax.plot(p0[h_param], p0[f_param], "o", color="red", alpha=0.2)
 
             _, p, _ = nparray_to_dict(solutions[i], model=self.model)
             if self.compute_ci:
                 CI = self.result.confidence_intervals
                 error = self.solver.split_into_experiments(CI)
                 _, perr, _ = nparray_to_dict(error[i], model=self.model)
-                _, _, bars = plt.errorbar(
+                _, _, bars = ax.errorbar(
                     x=p[h_param],
                     y=p[f_param],
                     xerr=perr[h_param],
@@ -153,11 +155,11 @@ class ParameterEstimator:
                 )
                 [bar.set_alpha(0.4) for bar in bars]
             else:
-                plt.plot(p[h_param], p[f_param], "o", color="red")
+                ax.plot(p[h_param], p[f_param], "o", color="red")
 
-        plt.xlabel(h_param)
-        plt.ylabel(f_param)
-        plt.show()
+        ax.set_xlabel(h_param)
+        ax.set_ylabel(f_param)
+        return _, fig
 
     def objective_function(self, x: np.ndarray) -> np.ndarray:
         """

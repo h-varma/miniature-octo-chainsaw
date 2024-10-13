@@ -3,9 +3,11 @@ import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 from scipy.optimize import root
 from ..logging_ import logger
+from ..postprocessing.plot_decorator import handle_plots
 
 
-def find_steady_state(model: object) -> np.ndarray:
+@handle_plots(plot_name="steady_state")
+def find_steady_state(model: object) -> tuple[np.ndarray, plt.Figure]:
     """
     Integrate and solve the model equations to get a steady state solution.
 
@@ -17,6 +19,7 @@ def find_steady_state(model: object) -> np.ndarray:
     Returns
     -------
     np.ndarray : steady state solution
+    matplotlib.figure.Figure : figure object
     """
 
     # integrate the model equations to get a solution estimate
@@ -28,10 +31,10 @@ def find_steady_state(model: object) -> np.ndarray:
     sol = solve_ivp(lambda _, y: model.rhs_(y), y0=y0, t_span=t_span)
 
     compartment_idx = model.compartments.index(model.to_plot)
-    plt.plot(sol.t, sol.y[compartment_idx, :])
-    plt.xlabel("time")
-    plt.ylabel(model.to_plot)
-    plt.show()
+    fig, ax = plt.subplots()
+    ax.plot(sol.t, sol.y[compartment_idx, :])
+    ax.set_xlabel("time")
+    ax.set_ylabel(model.to_plot)
 
     logger.debug(f"Model equations were integrated upto time {sol.t[-1]}.")
     logger.debug(f"Steady state estimation from integration: {sol.y[:, -1]}")
@@ -46,6 +49,6 @@ def find_steady_state(model: object) -> np.ndarray:
         solution_dict = {c: solution[i] for i, c in enumerate(model.compartments)}
         logger.debug(f"Steady state found: {solution_dict}")
 
-        return solution
+        return solution, fig
 
     raise RuntimeError("Could not solve model equations to find steady state!")

@@ -4,13 +4,15 @@ import matplotlib.pyplot as plt
 from ..continuation.select_continuer import import_continuer
 from ..parameter_estimation.problem_generator import OptimizationProblemGenerator
 from ..models.utils import dict_to_nparray, nparray_to_dict
+from ..postprocessing.plot_decorator import handle_plots
 
 
+@handle_plots(plot_name="bifurcation_curve")
 def trace_measured_bifurcations(
     x0: np.ndarray,
     model: object,
     continuer_name: str = "pseudo-arclength",
-):
+) -> tuple[np.ndarray, plt.Figure]:
     """
     Continue the bifurcation point to draw a two-parameter bifurcation diagram.
 
@@ -26,6 +28,7 @@ def trace_measured_bifurcations(
     Returns
     -------
     np.ndarray : set of bifurcation points in two-parameters
+    matplotlib.figure.Figure : figure object
     """
     Continuer = import_continuer(continuer_name)
     homotopy_parameter = model.controls["homotopy"]
@@ -64,17 +67,17 @@ def trace_measured_bifurcations(
     )
 
     solutions = []
+    fig, ax = plt.subplots()
     for parameter, solution in zip(continuer.parameters, continuer.solutions):
         model.parameters[homotopy_parameter]["vary"] = False
         c, p, h = nparray_to_dict(x=solution, model=model)
         p[homotopy_parameter] = parameter
-        plt.plot(p[homotopy_parameter], p[free_parameter], "ok")
+        ax.plot(p[homotopy_parameter], p[free_parameter], "ok")
 
         model.parameters[homotopy_parameter]["vary"] = True
         solution = dict_to_nparray(c=c, p=p, h=h, model=model)
         solutions.append(solution)
-    plt.xlabel(homotopy_parameter)
-    plt.ylabel(free_parameter)
-    plt.show()
+    ax.set_xlabel(homotopy_parameter)
+    ax.set_ylabel(free_parameter)
 
-    return solutions
+    return solutions, fig
