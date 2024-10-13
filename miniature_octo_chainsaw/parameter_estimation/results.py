@@ -1,8 +1,3 @@
-import easygui
-import pickle
-import time
-
-
 def get_results(res: object):
     """
     Get a summary of the parameter estimation results.
@@ -54,38 +49,3 @@ def get_results(res: object):
         result["PE"]["result"]["confidence_intervals"] = None
 
     return result
-
-
-def save_results_as_pickle(res: object, select_folder: bool = False):
-    """
-    Pickle the parameter estimation results.
-
-    Parameters
-    ----------
-    res : object
-        parameter estimation results
-    select_folder : bool
-        whether to manually select a folder to save the file
-    """
-    model_name = res.model.name
-    if select_folder:
-        dir_path = easygui.diropenbox() + "\\"
-    else:
-        dir_path = "..\\results\\"
-    file_name = model_name + "_" + time.strftime("%Y%m%d-%H%M%S")
-
-    with open(dir_path + file_name + ".pkl", "wb") as f:
-        pickle.dump(get_results(res), f)
-
-
-def load_results_from_pickle():
-    """
-    Load the parameter estimation results from pickle.
-
-    Returns
-    -------
-    dict : results
-    """
-    file_path = easygui.fileopenbox()
-    with open(file_path, "rb") as f:
-        return pickle.load(f)
