@@ -48,6 +48,7 @@ class ParameterEstimator:
         self.max_iters = max_iters
         self.plot_iters = plot_iters
         self.compute_ci = compute_ci
+        self.method = method
 
         self.n_experiments = len(model.data)
         self.n_observables = len(model.controls)

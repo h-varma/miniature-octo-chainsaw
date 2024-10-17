@@ -11,7 +11,6 @@ def get_results(res: object):
     result["data"] = {}
     result["data"]["values"] = res.model.data
     result["data"]["noise"] = res.model.data_noise
-    result["data"]["mask"] = res.mask
 
     result["bifurcation"] = {}
     result["bifurcation"]["type"] = res.model.bifurcation_type

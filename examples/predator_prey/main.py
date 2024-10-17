@@ -20,7 +20,6 @@ def main():
 
     # Load the model and randomize the parameters
     model = Model()
-    model.generate_parameter_guesses()
 
     # Preprocess the data
     data_preprocessor = DataPreprocessor()
@@ -30,11 +29,14 @@ def main():
     model.data = data_preprocessor.data
 
     # Create a folder for storing the results
-    results_path = create_folder_for_results(path=file_path)
-    plot_decorator.save_plots = False
-    plot_decorator.show_plots = True
+    results_path = create_folder_for_results(file_path)
+    plot_decorator.save_plots = True
+    plot_decorator.show_plots = False
+    if plot_decorator.save_plots:
+        plot_decorator.save_path = results_path
 
     # Generate initial guesses for the parameter estimation
+    model.generate_parameter_guesses()
     initializer = InitialGuessGenerator(model=model)
 
     # Solve parameter estimation problem
@@ -43,11 +45,11 @@ def main():
         model=model,
         method="osqp",
         plot_iters=True,
-        compute_ci=False,
+        compute_ci=True,
         timer=False,
     )
 
-    # save_results_as_pickle(res=fit)
+    save_results_as_pickle(res=fit, path=results_path)
 
 
 if __name__ == "__main__":
