@@ -141,3 +141,4 @@ cython_debug/
 # Ignore all figures and pickles
 *.png
 *.pkl
+*.html
