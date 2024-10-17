@@ -59,10 +59,9 @@ class BaseModel(ABC):
         truncated : bool
             whether to generate truncated normal random variables
         """
-        parameter_names = self.global_parameters + list(self.controls.values())
-
+        i = np.random.randint(0, len(self.data))
         for parameter_name, parameter_value in self.true_parameters.items():
-            if parameter_name in parameter_names:
+            if parameter_name in self.global_parameters:
                 loc = parameter_value
                 scale = np.abs(parameter_value * self.parameter_noise)
                 if truncated:
@@ -74,6 +73,8 @@ class BaseModel(ABC):
                 else:
                     parameter_value = np.random.normal(loc=loc, scale=scale)
                 parameter_value = float(parameter_value)
+            elif parameter_name in list(self.controls.values()):
+                parameter_value = self.data[i][parameter_name]
             self.parameters[parameter_name] = {"value": parameter_value, "vary": False}
 
         logger.info(f"True model parameters: {self.true_parameters}")
