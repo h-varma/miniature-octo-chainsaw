@@ -65,57 +65,64 @@ def find_bifurcation_point(
 
     # detect the bifurcation point from the continuation results
     if model.bifurcation_type == "hopf":
-        approx = steady_states.detect_hopf_bifurcation(parameter=parameter)
+        branches = steady_states.detect_hopf_bifurcation(parameter=parameter)
     elif model.bifurcation_type == "saddle-node":
-        approx = steady_states.detect_saddle_node_bifurcation(parameter=parameter)
-    else:
-        raise ValueError("Unrecognized bifurcation type!")
-    c, p, h = nparray_to_dict(x=approx, model=model)
-
-    jacobian_ = model.jacobian_(approx)
-    eig_vals, eig_vecs = np.linalg.eig(jacobian_)
-    mask = (eig_vals.real == min(eig_vals.real, key=abs)) & (eig_vals.imag >= 0)
-
-    if model.bifurcation_type == "hopf":
-        h["mu"] = eig_vals.imag[mask]
-        h["v"] = eig_vecs.real[:, mask].squeeze()
-        h["w"] = eig_vecs.imag[:, mask].squeeze()
-
-    elif model.bifurcation_type == "saddle-node":
-        h["h"] = eig_vecs.real[:, mask].squeeze()
-
+        branches = steady_states.detect_saddle_node_bifurcation(parameter=parameter)
     else:
         raise ValueError("Unrecognized bifurcation type!")
 
-    model.mask["auxiliary_variables"] = True
-    approx = dict_to_nparray(c=c, p=p, h=h, model=model)
+    for branch in branches:
+        assert len(branch) == len(model.compartments) + 1
+        c, p, h = nparray_to_dict(x=branch, model=model)
 
-    Optimizer = import_optimizer("scipy")
+        jacobian_ = model.jacobian_(branch)
+        eig_vals, eig_vecs = np.linalg.eig(jacobian_)
+        mask = (eig_vals.real == min(eig_vals.real, key=abs)) & (eig_vals.imag >= 0)
 
-    Objective = OptimizationProblemGenerator(model, include_singularity=True)
-    objective_function = Objective.stack_functions
+        if model.bifurcation_type == "hopf":
+            h["mu"] = eig_vals.imag[mask]
+            h["v"] = eig_vecs.real[:, mask].squeeze()
+            h["w"] = eig_vecs.imag[:, mask].squeeze()
 
-    Constraints = OptimizationProblemGenerator(
-        model, include_steady_state=True, include_normalization=True
-    )
-    equality_constraints = Constraints.stack_functions
+        elif model.bifurcation_type == "saddle-node":
+            h["h"] = eig_vecs.real[:, mask].squeeze()
 
-    logger.debug(f"Get the bifurcation point near {p[parameter]} using {optimizer_name} optimizer.")
-    optimizer = Optimizer(
-        objective=objective_function,
-        x0=approx,
-        constraints={"type": "eq", "fun": equality_constraints},
-    )
+        else:
+            raise ValueError("Unrecognized bifurcation type!")
 
-    optimizer.minimize(method="SLSQP", options={"tol": 1e-8})
+        model.mask["auxiliary_variables"] = True
+        branch = dict_to_nparray(c=c, p=p, h=h, model=model)
 
-    if optimizer.result.success:
-        solution = optimizer.result.x
-        max_obj = np.linalg.norm(objective_function(solution), ord=np.inf)
-        if not np.isclose(max_obj, 0):
-            logger.warning(f"Objective function is satisfied only upto {max_obj:.3e}")
-        _, p, _ = nparray_to_dict(x=solution, model=model)
-        logger.info(f"Found a bifurcation point at {p[parameter]}.")
-        return solution, fig
-    else:
-        raise RuntimeError("Could not find a bifurcation point!")
+        Optimizer = import_optimizer("scipy")
+
+        Objective = OptimizationProblemGenerator(model, include_singularity=True)
+        objective_function = Objective.stack_functions
+
+        Constraints = OptimizationProblemGenerator(
+            model, include_steady_state=True, include_normalization=True
+        )
+        equality_constraints = Constraints.stack_functions
+
+        logger.debug(
+            f"Get the bifurcation point near {p[parameter]} using {optimizer_name} optimizer."
+        )
+        optimizer = Optimizer(
+            objective=objective_function,
+            x0=branch,
+            constraints={"type": "eq", "fun": equality_constraints},
+        )
+
+        optimizer.minimize(method="SLSQP", options={"tol": 1e-8})
+
+        if optimizer.result.success:
+            solution = optimizer.result.x
+            max_obj = np.linalg.norm(objective_function(solution), ord=np.inf)
+            if not np.isclose(max_obj, 0):
+                logger.warning(f"Objective function is satisfied only upto {max_obj:.3e}")
+            _, p, _ = nparray_to_dict(x=solution, model=model)
+            logger.info(f"Found a bifurcation point at {p[parameter]}.")
+            return solution, fig
+        else:
+            model.mask["auxiliary_variables"] = False
+
+    raise RuntimeError("Could not find a bifurcation point!")

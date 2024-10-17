@@ -69,7 +69,7 @@ def match_solutions_to_data(model: object, solutions: list) -> np.ndarray:
             initial_guess.append(solutions[where_h])
             data.append({h_param: h_value, f_param: f_value})
 
-    assert len(initial_guess) > 0
+    assert len(initial_guess) > 0, "No matching solutions found for the experimental data!"
     assert len(initial_guess) == len(data)
     h_params = list(map(lambda x: get_parameter_value(x, type_="h", model=model), initial_guess))
     h_data = [d[h_param] for d in data]

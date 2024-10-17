@@ -471,7 +471,7 @@ class DeflatedContinuation(Continuer):
                 eigenvalues.append(np.linalg.eigvals(jacobian_))
         return np.row_stack([eigenvalues])
 
-    def _select_bifurcation_point(self, branches: list, parameter: str) -> np.ndarray:
+    def _select_bifurcation_point(self, branches: list, parameter: str) -> Union[np.ndarray, list]:
         """
         Select one bifurcation point from the detected bifurcation points.
 
@@ -484,7 +484,7 @@ class DeflatedContinuation(Continuer):
 
         Returns
         -------
-        np.ndarray : bifurcation point
+        np.ndarray or list : bifurcation points
         """
         branches = [branch for branch in branches if len(branch) > 0]
 
@@ -496,10 +496,9 @@ class DeflatedContinuation(Continuer):
             )
         elif len(branches) == 1:
             logger.info(f"A bifurcation was detected near {parameter} = {branches[0][self.p_idx]}.")
-            return branches[0]
+            return branches
         else:
             logger.info(f"Bifurcations were detected near the following values of {parameter}:")
             for i, branch in enumerate(branches):
                 logger.info(f"{i + 1}: {branch[self.p_idx]}")
-            idx = int(input("Select a bifurcation point for continuation: "))
-            return branches[idx - 1]
+            return branches
