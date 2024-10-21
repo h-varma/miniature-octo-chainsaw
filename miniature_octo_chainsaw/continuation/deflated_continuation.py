@@ -435,9 +435,9 @@ class DeflatedContinuation(Continuer):
                 is_complex = np.iscomplex(old_eigvals) | np.iscomplex(new_eigvals)
                 mask = np.any(sign_change & is_complex, axis=1)
                 solution = self.solutions[i][mask, :]
-                if len(solution):
-                    solution = self._join_x_vector_and_p(solution, self.parameters[i])
-                    branches[-1].extend(solution)
+                for sol in solution:
+                    sol = self._join_x_vector_and_p(sol, self.parameters[i])
+                    branches[-1].extend(sol)
                     self.bifurcations_found = True
                     branches.append([])
 
