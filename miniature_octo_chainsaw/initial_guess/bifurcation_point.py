@@ -112,7 +112,7 @@ def find_bifurcation_point(
             constraints={"type": "eq", "fun": equality_constraints},
         )
 
-        optimizer.minimize(method="SLSQP", options={"tol": 1e-8})
+        optimizer.minimize(method="SLSQP", options={"tol": 1e-6})
 
         if optimizer.result.success:
             solution = optimizer.result.x
