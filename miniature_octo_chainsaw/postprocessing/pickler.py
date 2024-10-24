@@ -32,19 +32,21 @@ def create_folder_for_results(path: str):
     return folder_path + "\\" + timestamp + "\\"
 
 
-def save_results_as_pickle(res: object, path: str):
+def save_results_as_pickle(model: object, res: object, path: str):
     """
     Pickle the parameter estimation results.
 
     Parameters
     ----------
+    model : object
+        model object
     res : object
         parameter estimation results
     path : str
         path to the folder where the results are to be stored
     """
     with open(path + "summary.pkl", "wb") as f:
-        pickle.dump(get_results(res), f)
+        pickle.dump(get_results(model=model, res=res), f)
 
 
 def load_results_from_pickle():

@@ -49,7 +49,7 @@ def main():
         timer=False,
     )
 
-    save_results_as_pickle(res=fit, path=results_path)
+    save_results_as_pickle(model=model, res=fit, path=results_path)
 
 
 if __name__ == "__main__":

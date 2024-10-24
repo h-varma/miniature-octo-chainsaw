@@ -42,6 +42,9 @@ class ParameterEstimator:
         timer : bool
             whether to time the solver
         """
+        if x0 is None:
+            return None
+
         self.x0 = x0
         self.model = model
         self.xtol = xtol
