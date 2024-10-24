@@ -4,7 +4,7 @@ import logging
 def create_logger(name: str, level=logging.INFO, output_file=True, output_console=True):
     """
     Create a logger object.
-    
+
     Parameters
     ----------
     name : str
@@ -23,10 +23,12 @@ def create_logger(name: str, level=logging.INFO, output_file=True, output_consol
     logger_ = logging.getLogger(name)
     logger_.setLevel(level=level)
 
-    formatter = logging.Formatter('[%(asctime)s] {%(module)s:%(lineno)d} %(levelname)s - %(message)s','%m-%d %H:%M:%S')
+    format_style = "[%(asctime)s] {%(module)s:%(lineno)d} %(levelname)s - %(message)s"
+    date_format = "%m-%d %H:%M:%S"
+    formatter = logging.Formatter(fmt=format_style, datefmt=date_format)
 
     # log into a file
-    file_handler = logging.FileHandler('{}.log'.format(name))
+    file_handler = logging.FileHandler("{}.log".format(name))
     file_handler.setFormatter(formatter)
 
     # log into console
