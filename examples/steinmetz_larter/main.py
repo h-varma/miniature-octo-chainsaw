@@ -16,8 +16,6 @@ import miniature_octo_chainsaw.postprocessing.plot_decorator as plot_decorator
 
 def main():
 
-    logger.setLevel("INFO")
-
     # Load the model and randomize the parameters
     model = Model()
 
@@ -25,7 +23,6 @@ def main():
     data_preprocessor = DataPreprocessor()
     data_preprocessor.load_the_data(file_path=file_path)
     data_preprocessor.add_noise_to_the_data(scale=model.data_noise)
-    data_preprocessor.select_subset_of_data(length=25)
     model.data = data_preprocessor.data
 
     # Create a folder for storing the results
