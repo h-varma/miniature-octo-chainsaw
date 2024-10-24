@@ -49,6 +49,7 @@ class InitialGuessGenerator:
                 value = self.model.parameters[global_parameter]["value"]
                 self.initial_guesses = np.hstack([self.initial_guesses, value])
             self.model.mask["global_parameters"] = True
-        except Exception as e:
+        except Exception as error_message:
             self.initial_guesses = None
-            logger.error(f"Initial guess generation failed: {e}")
+            self.model.error_message = repr(error_message)
+            logger.error(f"Initial guess generation failed: {repr(error_message)}")

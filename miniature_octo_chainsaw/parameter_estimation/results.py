@@ -30,6 +30,11 @@ def get_results(model: object, res: object = None):
     result["model"]["controls"] = model.controls
     result["model"]["global_parameters"] = model.global_parameters
 
+    try:
+        result["error_message"] = model.error_message
+    except AttributeError:
+        result["error_message"] = None
+
     if res.__dict__ != {}:
         result["PE"] = {}
         result["PE"]["n_experiments"] = res.n_experiments
