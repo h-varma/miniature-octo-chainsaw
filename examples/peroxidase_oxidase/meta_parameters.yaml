@@ -36,7 +36,7 @@ control_2:
 
 global_parameters:
   - 'k1'
-  - 'k2'
+  - 'k6'
 
 residual:
   scale: 'linear'
