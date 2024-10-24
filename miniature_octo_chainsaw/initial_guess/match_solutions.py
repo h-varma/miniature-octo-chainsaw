@@ -1,4 +1,5 @@
 import autograd.numpy as np
+from scipy.spatial.distance import cdist
 from ..models.utils import nparray_to_dict
 
 
@@ -36,38 +37,20 @@ def match_solutions_to_data(model: object, solutions: list) -> np.ndarray:
     unique_h_data, unique_idx = np.unique(h_data, return_index=True)
     for h_value in unique_h_data[unique_idx]:
         where_h = np.where(np.isclose(h_params, h_value))[0]
-        count_h = len(where_h)
 
-        if count_h == 2:
-            # predicted two bifurcation points with the same homotopy parameter value
-            matching_f = f_data[np.isclose(h_data, h_value)]
-            f_values = np.array(f_params)[where_h]
-            if len(matching_f) == 2:
-                # experimental data has two bifurcation points with different free parameter values
-                for i in range(2):
-                    f_closest = min(f_values, key=lambda x: abs(x - matching_f[i]))
-                    idx = f_params.index(f_closest)
-                    initial_guess.append(solutions[idx])
-                    data.append({h_param: h_value, f_param: matching_f[i]})
-            elif len(matching_f) == 1:
-                # experimental data has only one corresponding bifurcation point
-                f_closest = min(f_values, key=lambda x: abs(x - matching_f))
-                idx = f_params.index(f_closest)
-                initial_guess.append(solutions[idx])
-                data.append({h_param: h_value, f_param: matching_f[0]})
+        _f_data = f_data[np.isclose(h_data, h_value)]
+        _f_values = np.array(f_params)[where_h]
+        dist_matrix = cdist(_f_data.reshape(-1, 1), _f_values.reshape(-1, 1))
 
-        elif count_h == 1:
-            # predicted one bifurcation point with the homotopy parameter value
-            where_h = where_h[0]
-            _f_data = f_data[np.isclose(h_data, h_value)]
-            if len(_f_data) == 2:
-                # but experimental data has two corresponding bifurcation points
-                f_value = min(_f_data, key=lambda x: abs(x - f_params[where_h]))
-            else:
-                # and experimental data has one corresponding bifurcation point
-                f_value = _f_data[0]
-            initial_guess.append(solutions[where_h])
-            data.append({h_param: h_value, f_param: f_value})
+        for _ in range(min(dist_matrix.shape)):
+            row, col = np.argwhere(dist_matrix == np.nanmin(dist_matrix))[0]
+            dist_matrix[:, col] = np.nan
+            dist_matrix[row, :] = np.nan
+
+            idx = f_params.index(_f_values[col])
+            initial_guess.append(solutions[idx])
+
+            data.append({h_param: h_value, f_param: _f_data[row]})
 
     assert len(initial_guess) > 0, "No matching solutions found for the experimental data!"
     assert len(initial_guess) == len(data)
