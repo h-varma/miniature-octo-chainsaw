@@ -40,4 +40,4 @@ global_parameters:
 
 residual:
   scale: 'linear'
-  type: 'relative'
+  type: 'absolute'
